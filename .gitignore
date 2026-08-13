@@ -1,0 +1,9 @@
+digital-image-backend/node_modules/
+# Ignore all .env files across all folders
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+
+digital-image-frontend/node_modules/
