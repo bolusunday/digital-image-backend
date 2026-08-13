@@ -234,6 +234,16 @@ app.post(
 // Global JSON Parsing Middleware
 app.use(express.json());
 
+// --------------- Root & Health Check Routes ---------------
+
+// Fix: Add root route so visiting api.pegty.com directly returns 200 OK
+app.get("/", (req, res) => {
+  res.status(200).json({
+    message: "Pegty API is online and healthy 🚀",
+    healthCheck: "https://api.pegty.com/api/health",
+  });
+});
+
 // Server Health Check Route
 app.get("/api/health", (req, res) => {
   res
