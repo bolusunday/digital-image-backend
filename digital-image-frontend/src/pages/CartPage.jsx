@@ -11,7 +11,7 @@ export default function CartPage({
 }) {
   // Helper function to safely calculate price whether given in cents or dollars
   const getItemPrice = (price) => {
-    const raw = Number(price || 0);
+    const raw = (Number(price || 0) / 100).toFixed(2);
     return raw > 500 ? raw / 100 : raw;
   };
 
