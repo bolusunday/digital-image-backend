@@ -9,14 +9,14 @@ export default function CartPage({
   onRemoveFromCart,
   mockUserToken,
 }) {
-  // Helper function to safely calculate price whether given in cents or dollars
-  const getItemPrice = (price) => {
-    const raw = (Number(price || 0) / 100).toFixed(2);
-    return raw > 500 ? raw / 100 : raw;
+  // ✅ FIX 1: Always returns a raw Number in dollars (e.g. 100 cents -> 1.00 dollar)
+  const getItemPrice = (priceInCents) => {
+    return Number(priceInCents || 0) / 100;
   };
 
+  // ✅ FIX 2: Correctly calculates total dollars using the helper function and quantity
   const totalCartPriceDollars = cart.reduce(
-    (sum, item) => sum + (Number(item.price || 0) / 100) * (item.quantity || 1),
+    (sum, item) => sum + getItemPrice(item.price) * (item.quantity || 1),
     0,
   );
 
