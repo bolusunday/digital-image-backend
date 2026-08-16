@@ -16,7 +16,7 @@ export default function CartPage({
   };
 
   const totalCartPriceDollars = cart.reduce(
-    (sum, item) => sum + getItemPrice(item.price),
+    (sum, item) => sum + (Number(item.price || 0) / 100) * (item.quantity || 1),
     0,
   );
 
