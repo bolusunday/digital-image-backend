@@ -1,6 +1,7 @@
 // src/components/CheckoutButton.jsx
 import React, { useState } from "react";
 import { CreditCard, Loader2, Lock, AlertCircle } from "lucide-react";
+import { API_URL } from "../config";
 
 export default function CheckoutButton({ cart = [] }) {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -23,7 +24,6 @@ export default function CheckoutButton({ cart = [] }) {
       }
 
       // Dynamic API base URL based on environment
-      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
       const response = await fetch(
         `${API_URL}/api/payments/create-checkout-session`,

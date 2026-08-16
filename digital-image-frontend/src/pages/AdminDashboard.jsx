@@ -73,8 +73,6 @@ function EditProductModal({
     const priceInCents = Math.round(parseFloat(formData.price || "0") * 100);
     const cleanCategory = formData.category.toLowerCase().trim();
 
-    const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-
     // inside your submit/update handler:
     try {
       setSaving(true);
@@ -311,7 +309,7 @@ export default function AdminDashboard() {
   const fetchProducts = async () => {
     setLoadingProducts(true);
     try {
-      const res = await fetch("http://localhost:5000/api/products");
+      const res = await fetch(`${API_URL}/api/products`);
       const data = await res.json();
       if (res.ok) setProducts(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -365,7 +363,7 @@ export default function AdminDashboard() {
     formData.append("original_file", originalFile);
 
     try {
-      const res = await fetch("http://localhost:5000/api/products/upload", {
+      const res = await fetch(`${API_URL}/api/products/upload`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -404,7 +402,7 @@ export default function AdminDashboard() {
 
     setDeletingId(id);
     try {
-      const res = await fetch(`http://localhost:5000/api/products/${id}`, {
+      const res = await fetch(`${API_URL}/api/products/${id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
