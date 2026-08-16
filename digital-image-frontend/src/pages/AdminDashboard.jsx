@@ -534,7 +534,9 @@ export default function AdminDashboard() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                {" "}
                 {products.map((product) => {
-                  const rawPrice = Number(product.price || 0);
+                  const rawPrice = Number(
+                    (product.price / 100).toFixed(2) || 0,
+                  );
                   const priceInDollars =
                     rawPrice > 500 ? rawPrice / 100 : rawPrice;
 
