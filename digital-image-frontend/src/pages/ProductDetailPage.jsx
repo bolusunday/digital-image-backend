@@ -295,7 +295,7 @@ export default function ProductDetailPage({ onAddToCart }) {
 
   const ratingAverage = Number(product.rating_average || 0);
   const ratingCount = Number(product.rating_count || 0);
-  const priceInDollars = Number(product.price || 0);
+  const priceInDollars = Number(product.price || 0) / 100;
 
   const validReviews = (Array.isArray(reviews) ? reviews : []).filter(
     (rev) => rev && (rev.id || rev.comment || rev.user_name),
