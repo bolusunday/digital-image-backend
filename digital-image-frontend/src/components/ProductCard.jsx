@@ -50,7 +50,7 @@ export default function ProductCard({ product, onAddToCart }) {
   const [isAdded, setIsAdded] = useState(false);
   const { ratingAverage, ratingCount, salesCount } = getProductStats(product);
 
-  const rawPrice = Number(product.price || 0);
+  const rawPrice = Number((product.price / 100).toFixed(2) || 0);
   const priceInDollars = rawPrice > 500 ? rawPrice / 100 : rawPrice;
   const originalPriceInDollars = priceInDollars * 1.3;
 
