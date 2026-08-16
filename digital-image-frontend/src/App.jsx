@@ -16,8 +16,7 @@ import SuccessPage from "./pages/SuccessPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 import LoginPage from "./pages/LoginPage";
-
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+import { API_URL } from "./config";
 
 function Home({ products, isLoading, onAddToCart }) {
   const { categorySlug } = useParams();
