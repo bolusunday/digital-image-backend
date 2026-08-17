@@ -124,7 +124,26 @@ function Home({ products, isLoading, onAddToCart }) {
 export default function App() {
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [cart, setCart] = useState([]);
+
+  // ✅ 1. Load cart from localStorage on initial render
+  const [cart, setCart] = useState(() => {
+    try {
+      const savedCart = localStorage.getItem("pegty_cart");
+      return savedCart ? JSON.parse(savedCart) : [];
+    } catch (error) {
+      console.error("Error loading cart from localStorage:", error);
+      return [];
+    }
+  });
+
+  // ✅ 2. Save cart to localStorage whenever cart state changes
+  useEffect(() => {
+    try {
+      localStorage.setItem("pegty_cart", JSON.stringify(cart));
+    } catch (error) {
+      console.error("Error saving cart to localStorage:", error);
+    }
+  }, [cart]);
 
   useEffect(() => {
     setIsLoading(true);
