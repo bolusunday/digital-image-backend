@@ -37,13 +37,12 @@ function Home({ products, isLoading, onAddToCart }) {
   const currentCategory = categorySlug || searchParams.get("category") || "";
   const searchQuery = searchParams.get("search")?.trim().toLowerCase() || "";
 
-  //  Map slugs to proper category display names
+  // ✅ Map slugs to proper category display names
   const categoryNames = {
-    sport: "Sport Assets",
-    cartoon: "Cartoon & Characters",
-    africana: "Africana Art",
-    medieval: "Medieval Packs",
-    homedecor: "Home Decor",
+    sport: "Sport",
+    cartoon: "Cartoon",
+    africana: "Africana",
+    medieval: "Medieval",
     ebook: "E-Books",
   };
 
@@ -68,7 +67,6 @@ function Home({ products, isLoading, onAddToCart }) {
     }
     if (currentCategory) {
       const lowerCategory = currentCategory.toLowerCase();
-      // Match exact category name from dictionary or fallback to capitalized string
       const categoryName =
         categoryNames[lowerCategory] ||
         currentCategory.charAt(0).toUpperCase() + currentCategory.slice(1);
@@ -83,13 +81,14 @@ function Home({ products, isLoading, onAddToCart }) {
       {/* Header Banner */}
       <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 border-b border-slate-200 pb-5 sm:pb-6">
         <div>
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
+          {/* ✅ Changed font-extrabold to font-semibold for a cleaner font weight */}
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold text-slate-900 tracking-tight">
             {getHeaderTitle()}
           </h1>
 
           {/* ✅ Displays ONLY on the All Products homepage */}
           {!currentCategory && !searchQuery && (
-            <p className="text-xs sm:text-sm text-slate-300 mt-1 font-medium leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium leading-relaxed">
               Discover high-quality, unique and ready-to-use images in
               categories of Sport, Cartoon, Africana and Medieval. We also have
               in stock, collection of highly informative E-books

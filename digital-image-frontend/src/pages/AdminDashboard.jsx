@@ -18,10 +18,11 @@ import {
 import { API_URL } from "../config";
 
 const CATEGORY_OPTIONS = [
-  { name: "Sport", value: "sport" },
-  { name: "Cartoon", value: "cartoon" },
-  { name: "Africana", value: "africana" },
-  { name: "Medieval", value: "medieval" },
+  { name: "Sport Assets", value: "sport" },
+  { name: "Cartoon & Characters", value: "cartoon" },
+  { name: "Africana Art", value: "africana" },
+  { name: "Medieval Packs", value: "medieval" },
+  { name: "Home Decor", value: "homedecor" },
   { name: "EBooks", value: "ebook" },
 ];
 
