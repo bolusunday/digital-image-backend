@@ -103,7 +103,7 @@ export default function Navbar({ cartCount = 0 }) {
             type="text"
             value={searchTerm}
             onChange={handleInputChange}
-            placeholder="Search digital assets, e-books, models..."
+            placeholder="Search products..."
             className="w-full bg-slate-100/80 hover:bg-slate-100 focus:bg-white text-sm font-medium text-slate-800 placeholder:text-slate-400 py-2.5 pl-4 pr-12 rounded-full border border-slate-200/80 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 focus:outline-none transition-all duration-200"
           />
 
