@@ -37,12 +37,13 @@ function Home({ products, isLoading, onAddToCart }) {
   const currentCategory = categorySlug || searchParams.get("category") || "";
   const searchQuery = searchParams.get("search")?.trim().toLowerCase() || "";
 
-  // ✅ Map slugs to proper category display names
+  // Map slugs to proper category display names
   const categoryNames = {
-    sport: "Sport",
-    cartoon: "Cartoon",
-    africana: "Africana",
-    medieval: "Medieval",
+    sport: "Sport Assets",
+    cartoon: "Cartoon & Characters",
+    africana: "Africana Art",
+    medieval: "Medieval Packs",
+    homedecor: "Home Decor",
     ebook: "E-Books",
   };
 
@@ -82,7 +83,7 @@ function Home({ products, isLoading, onAddToCart }) {
       <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 border-b border-slate-200 pb-5 sm:pb-6">
         <div>
           {/* ✅ Changed font-extrabold to font-semibold for a cleaner font weight */}
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-700 tracking-tight">
+          <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-700 tracking-tight">
             {getHeaderTitle()}
           </h1>
 
