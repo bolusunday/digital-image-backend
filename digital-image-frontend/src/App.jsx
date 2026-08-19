@@ -43,6 +43,7 @@ function Home({ products, isLoading, onAddToCart }) {
     cartoon: "Cartoon & Characters",
     africana: "Africana Art",
     medieval: "Medieval Packs",
+    homedecor: "Home Decor",
     ebook: "E-Books",
   };
 
@@ -88,7 +89,7 @@ function Home({ products, isLoading, onAddToCart }) {
 
           {/* ✅ Displays ONLY on the All Products homepage */}
           {!currentCategory && !searchQuery && (
-            <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-300 mt-1 font-medium leading-relaxed">
               Discover high-quality, unique and ready-to-use images in
               categories of Sport, Cartoon, Africana and Medieval. We also have
               in stock, collection of highly informative E-books
