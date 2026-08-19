@@ -37,6 +37,15 @@ function Home({ products, isLoading, onAddToCart }) {
   const currentCategory = categorySlug || searchParams.get("category") || "";
   const searchQuery = searchParams.get("search")?.trim().toLowerCase() || "";
 
+  //  Map slugs to proper category display names
+  const categoryNames = {
+    sport: "Sport Assets",
+    cartoon: "Cartoon & Characters",
+    africana: "Africana Art",
+    medieval: "Medieval Packs",
+    ebook: "E-Books",
+  };
+
   let displayedProducts = currentCategory
     ? products.filter(
         (p) => p.category?.toLowerCase() === currentCategory.toLowerCase(),
@@ -57,9 +66,13 @@ function Home({ products, isLoading, onAddToCart }) {
       return `Search Results for "${searchQuery}"`;
     }
     if (currentCategory) {
-      return `${
-        currentCategory.charAt(0).toUpperCase() + currentCategory.slice(1)
-      } Collection`;
+      const lowerCategory = currentCategory.toLowerCase();
+      // Match exact category name from dictionary or fallback to capitalized string
+      const categoryName =
+        categoryNames[lowerCategory] ||
+        currentCategory.charAt(0).toUpperCase() + currentCategory.slice(1);
+
+      return `${categoryName} Collection`;
     }
     return "Explore Digital Products";
   };
@@ -73,7 +86,7 @@ function Home({ products, isLoading, onAddToCart }) {
             {getHeaderTitle()}
           </h1>
 
-          {/* ✅ Displays ONLY on the All Products homepage (no category selected, no search) */}
+          {/* ✅ Displays ONLY on the All Products homepage */}
           {!currentCategory && !searchQuery && (
             <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium leading-relaxed">
               Discover high-quality, unique and ready-to-use images in
