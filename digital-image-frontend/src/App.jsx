@@ -73,7 +73,7 @@ function Home({ products, isLoading, onAddToCart }) {
 
       return `${categoryName} Collection`;
     }
-    return "Explore Digital Products";
+    return "Explore Our Digital Products";
   };
 
   return (
@@ -82,14 +82,14 @@ function Home({ products, isLoading, onAddToCart }) {
       <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 border-b border-slate-200 pb-5 sm:pb-6">
         <div>
           {/* ✅ Changed font-extrabold to font-semibold for a cleaner font weight */}
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold text-slate-900 tracking-tight">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-700 tracking-tight">
             {getHeaderTitle()}
           </h1>
 
           {/* ✅ Displays ONLY on the All Products homepage */}
           {!currentCategory && !searchQuery && (
             <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium leading-relaxed">
-              Discover high-quality, unique and ready-to-use images in
+              Discover our high-quality, unique and ready-to-use images in
               categories of Sport, Cartoon, Africana and Medieval. We also have
               in stock, collection of highly informative E-books
             </p>
