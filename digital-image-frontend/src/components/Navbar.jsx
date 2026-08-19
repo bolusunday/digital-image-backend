@@ -87,7 +87,7 @@ export default function Navbar({ cartCount = 0 }) {
             to="/"
             className="text-xl sm:text-2xl font-black tracking-tight shrink-0 flex items-center gap-2 no-underline group"
           >
-            <span className="text-violet-600 font-extrabold tracking-wider text-base sm:text-xl">
+            <span className="font-extrabold uppercase tracking-wider text-indigo-600 text-[10px] sm:text-[11px]">
               Pegty
             </span>
           </Link>
