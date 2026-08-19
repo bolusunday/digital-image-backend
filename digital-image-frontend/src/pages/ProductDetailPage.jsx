@@ -71,6 +71,13 @@ function WriteGuestReviewSection({ productId, onReviewAdded }) {
         };
 
         if (onReviewAdded) onReviewAdded(review, stats);
+
+        // Reset form inputs
+        setOrderId("");
+        setEmail("");
+        setDisplayName("");
+        setComment("");
+        setRating(5);
       } else {
         setMessage(data.error || "Failed to verify review.");
       }
@@ -297,6 +304,10 @@ export default function ProductDetailPage({ onAddToCart }) {
   const ratingCount = Number(product.rating_count || 0);
   const priceInDollars = Number(product.price || 0) / 100;
 
+  // Safe checks if category equals ebook, e book, or e-book
+  const isEbook =
+    (product.category || "").toLowerCase().replace(/[^a-z]/g, "") === "ebook";
+
   const validReviews = (Array.isArray(reviews) ? reviews : []).filter(
     (rev) => rev && (rev.id || rev.comment || rev.user_name),
   );
@@ -333,7 +344,7 @@ export default function ProductDetailPage({ onAddToCart }) {
             <div>
               <div className="flex items-center justify-between text-xs text-slate-500 mb-2">
                 <span className="font-extrabold uppercase tracking-wider text-indigo-600 text-[10px] sm:text-[11px]">
-                  PixelVault Studio
+                  {isEbook ? "Pegty Library" : "Pegty Studio"}
                 </span>
                 <button
                   onClick={() =>
