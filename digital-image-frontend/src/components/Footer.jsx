@@ -71,11 +71,10 @@ export default function Footer() {
               <div className="p-1.5 bg-indigo-600 group-hover:bg-indigo-500 rounded-lg text-white transition-colors">
                 <Package size={18} />
               </div>
-              <span>Digital Store</span>
+              <span>Pegty</span>
             </Link>
             <p className="text-xs text-zinc-400 leading-relaxed max-w-sm">
-              Premium digital assets, 3D models, and design packs ready for your
-              next big project.
+              Premium digital assets
             </p>
           </div>
 
@@ -116,12 +115,20 @@ export default function Footer() {
                   Medieval Packs
                 </Link>
               </li>
+              <li>
+                <Link
+                  to="/category/ebook"
+                  className="text-zinc-400 hover:text-white transition-colors no-underline block py-0.5"
+                >
+                  E-Books
+                </Link>
+              </li>
             </ul>
           </div>
 
           <div className="space-y-3">
             <h3 className="text-xs font-extrabold text-white uppercase tracking-wider">
-              Account & Store
+              Account
             </h3>
             <ul className="space-y-2 text-xs">
               <li>
@@ -137,7 +144,7 @@ export default function Footer() {
                   to="/admin"
                   className="text-zinc-400 hover:text-white transition-colors no-underline block py-0.5"
                 >
-                  Admin Dashboard
+                  Admin
                 </Link>
               </li>
               <li>
@@ -147,7 +154,7 @@ export default function Footer() {
                   rel="noreferrer"
                   className="text-zinc-400 hover:text-white transition-colors no-underline inline-flex items-center gap-1 py-0.5"
                 >
-                  <span>Stripe Security</span>
+                  <span>Stripe</span>
                   <ArrowUpRight size={12} className="text-zinc-500" />
                 </a>
               </li>
@@ -162,15 +169,6 @@ export default function Footer() {
               Get notified when new digital asset packs are released.
             </p>
             <div className="flex items-center gap-2.5 pt-1">
-              <a
-                href="https://github.com"
-                target="_blank"
-                rel="noreferrer"
-                title="GitHub"
-                className="p-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white hover:border-zinc-700 hover:bg-zinc-800 transition-all active:scale-95"
-              >
-                <Code2 size={16} />
-              </a>
               <a
                 href="https://x.com"
                 target="_blank"
@@ -193,16 +191,10 @@ export default function Footer() {
 
         <div className="pt-6 border-t border-zinc-800/60 flex flex-col sm:flex-row items-center justify-between text-xs text-zinc-500 gap-3 text-center sm:text-left">
           <p>
-            © {new Date().getFullYear()} Digital Store Inc. All rights reserved.
+            © {new Date().getFullYear()} Pegty Digital Store. All rights
+            reserved.
           </p>
-          <div className="flex items-center gap-1 text-zinc-500">
-            <span>Built with</span>
-            <Heart
-              size={13}
-              className="text-rose-500 fill-rose-500 inline shrink-0"
-            />
-            <span>using React & Tailwind CSS</span>
-          </div>
+          <div className="flex items-center gap-1 text-zinc-500"></div>
         </div>
       </div>
     </footer>

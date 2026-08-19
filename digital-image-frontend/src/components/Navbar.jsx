@@ -18,10 +18,10 @@ export default function Navbar({ cartCount = 0 }) {
   const location = useLocation();
 
   const categories = [
-    { name: "Sport", slug: "sport" },
-    { name: "Cartoon", slug: "cartoon" },
-    { name: "Africana", slug: "africana" },
-    { name: "Medieval", slug: "medieval" },
+    { name: "Sport Assets", slug: "sport" },
+    { name: "Cartoon & Characters", slug: "cartoon" },
+    { name: "Africana Art", slug: "africana" },
+    { name: "Medieval Packs", slug: "medieval" },
     { name: "E-Books", slug: "ebook" },
   ];
 
@@ -93,7 +93,7 @@ export default function Navbar({ cartCount = 0 }) {
           </Link>
         </div>
 
-        {/* Central Search Bar */}
+        {/* Central Search Bar (Desktop) */}
         <form
           onSubmit={handleSearchSubmit}
           className="hidden md:flex flex-1 max-w-xl relative items-center"
@@ -192,8 +192,8 @@ export default function Navbar({ cartCount = 0 }) {
         </div>
       )}
 
-      {/* Modern Capsule Pill Category Nav */}
-      <div className="border-t border-slate-100 bg-slate-50/50">
+      {/* Capsule Pill Category Nav - HIDDEN ON MOBILE (md:block added) */}
+      <div className="hidden md:block border-t border-slate-100 bg-slate-50/50">
         <div className="w-full px-4 sm:px-6 lg:px-10">
           <nav className="flex items-center gap-2 overflow-x-auto py-2.5 scrollbar-none text-[11px] sm:text-xs font-bold uppercase tracking-wider">
             <Link
