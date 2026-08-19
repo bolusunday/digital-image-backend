@@ -22,6 +22,7 @@ export default function Navbar({ cartCount = 0 }) {
     { name: "Cartoon & Characters", slug: "cartoon" },
     { name: "Africana Art", slug: "africana" },
     { name: "Medieval Packs", slug: "medieval" },
+    { name: "Home Decor", slug: "homedecor" },
     { name: "E-Books", slug: "ebook" },
   ];
 

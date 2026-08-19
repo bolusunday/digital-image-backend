@@ -73,9 +73,10 @@ function Home({ products, isLoading, onAddToCart }) {
             {getHeaderTitle()}
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium leading-relaxed">
-            Discover high-quality, unique and ready-to-use images in categories
-            of Sport, Cartoon, Africana and Medieval. We also have in stock,
-            collection of highly informative E-books
+            Discover our high-quality, unique and ready-to-use images in
+            categories of Sport Assets, Cartoon & Characters, Africana Art,
+            Medieval Packs and Home Decor. We also have in stock, collection of
+            highly informative E-books
           </p>
         </div>
         <span className="text-[10px] sm:text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full w-fit tracking-wider uppercase shrink-0">

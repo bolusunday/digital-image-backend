@@ -112,6 +112,12 @@ export default function Footer() {
                   to="/category/medieval"
                   className="text-zinc-400 hover:text-white transition-colors no-underline block py-0.5"
                 >
+                  Home Decor
+                </Link>
+                <Link
+                  to="/category/homedecor"
+                  className="text-zinc-400 hover:text-white transition-colors no-underline block py-0.5"
+                >
                   Medieval Packs
                 </Link>
               </li>
