@@ -90,7 +90,7 @@ export default function Navbar({ cartCount = 0 }) {
             <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform shrink-0">
               <ShoppingBag size={18} />
             </div>
-            <span className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 bg-clip-text text-transparent uppercase font-extrabold tracking-wider text-base sm:text-xl">
+            <span className="bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent font-extrabold tracking-wider text-base sm:text-xl">
               Pegty
             </span>
           </Link>
