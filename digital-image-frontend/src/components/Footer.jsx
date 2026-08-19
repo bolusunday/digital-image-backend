@@ -1,6 +1,6 @@
 // src/components/Footer.jsx
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   ShieldCheck,
   Zap,
@@ -11,6 +11,15 @@ import {
 } from "lucide-react";
 
 export default function Footer() {
+  const location = useLocation();
+
+  const handleLogoClick = (e) => {
+    if (location.pathname === "/") {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
   return (
     <footer className="bg-zinc-950 text-zinc-400 border-t border-zinc-800/80 pt-10 sm:pt-12 pb-8 mt-auto w-full">
       <div className="w-full px-4 sm:px-6 lg:px-10 space-y-8 sm:space-y-10">
@@ -62,7 +71,8 @@ export default function Footer() {
           <div className="space-y-3 sm:col-span-2 lg:col-span-1">
             <Link
               to="/"
-              className="inline-flex items-center gap-2 text-white font-extrabold text-base sm:text-lg no-underline group"
+              onClick={handleLogoClick}
+              className="inline-flex items-center gap-2 text-white font-extrabold text-base sm:text-lg no-underline group cursor-pointer"
             >
               <span>Pegty</span>
             </Link>
