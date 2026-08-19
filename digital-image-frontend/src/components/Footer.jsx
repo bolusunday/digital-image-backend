@@ -2,12 +2,9 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import {
-  Package,
   ShieldCheck,
   Zap,
   Globe,
-  Heart,
-  Code2,
   Send,
   Mail,
   ArrowUpRight,
@@ -15,8 +12,7 @@ import {
 
 export default function Footer() {
   return (
-    <footer className="bg-zinc-950 text-zinc-400 border-t border-zinc-800/80 pt-10 sm:pt-12 pb-8 mt-auto">
-      {/* Changed max-w-7xl mx-auto to w-full */}
+    <footer className="bg-zinc-950 text-zinc-400 border-t border-zinc-800/80 pt-10 sm:pt-12 pb-8 mt-auto w-full">
       <div className="w-full px-4 sm:px-6 lg:px-10 space-y-8 sm:space-y-10">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 pb-8 sm:pb-10 border-b border-zinc-800/60">
           <div className="flex items-center gap-3.5 bg-zinc-900/40 sm:bg-transparent p-3 sm:p-0 rounded-2xl sm:rounded-none border border-zinc-800/60 sm:border-none">
@@ -111,6 +107,8 @@ export default function Footer() {
                 >
                   Medieval Packs
                 </Link>
+              </li>
+              <li>
                 <Link
                   to="/category/homedecor"
                   className="text-zinc-400 hover:text-white transition-colors no-underline block py-0.5"
@@ -197,7 +195,6 @@ export default function Footer() {
             © {new Date().getFullYear()} Pegty Digital Store. All rights
             reserved.
           </p>
-          <div className="flex items-center gap-1 text-zinc-500"></div>
         </div>
       </div>
     </footer>
