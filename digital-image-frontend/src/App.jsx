@@ -6,6 +6,7 @@ import {
   Route,
   useParams,
   useSearchParams,
+  useLocation,
 } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -17,6 +18,17 @@ import AdminDashboard from "./pages/AdminDashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 import LoginPage from "./pages/LoginPage";
 import { API_URL } from "./config";
+
+// ✅ Helper component that resets scroll position on navigation
+function ScrollToTop() {
+  const { pathname, search } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [pathname, search]);
+
+  return null;
+}
 
 function Home({ products, isLoading, onAddToCart }) {
   const { categorySlug } = useParams();
@@ -169,6 +181,9 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      {/* Resets viewport scroll to top on page or category changes */}
+      <ScrollToTop />
+
       <div className="min-h-screen bg-slate-50/60 text-slate-900 font-sans flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
         <Navbar cartCount={cart.length} />
 
