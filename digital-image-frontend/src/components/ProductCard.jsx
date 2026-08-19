@@ -142,7 +142,7 @@ export default function ProductCard({ product, onAddToCart }) {
             <span>({ratingCount.toLocaleString()})</span>
             <span className="hidden sm:inline">•</span>
             <span className="font-medium text-slate-600 w-full sm:w-auto mt-0.5 sm:mt-0">
-              {salesCount.toLocaleString()} sales
+              {salesCount.toLocaleString()} sold
             </span>
           </div>
         </div>
