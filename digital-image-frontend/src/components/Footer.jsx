@@ -68,9 +68,6 @@ export default function Footer() {
               to="/"
               className="inline-flex items-center gap-2 text-white font-extrabold text-base sm:text-lg no-underline group"
             >
-              <div className="p-1.5 bg-indigo-600 group-hover:bg-indigo-500 rounded-lg text-white transition-colors">
-                <Package size={18} />
-              </div>
               <span>Pegty</span>
             </Link>
             <p className="text-xs text-zinc-400 leading-relaxed max-w-sm">
