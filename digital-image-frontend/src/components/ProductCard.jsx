@@ -52,7 +52,7 @@ export default function ProductCard({ product, onAddToCart }) {
 
   const rawPrice = (Number(product.price || 0) / 100).toFixed(2);
   const priceInDollars = rawPrice > 500 ? rawPrice / 100 : rawPrice;
-  const originalPriceInDollars = priceInDollars * 1.3;
+  const originalPriceInDollars = priceInDollars * 1.5;
 
   const formattedPrice = priceInDollars.toLocaleString("en-US", {
     style: "currency",
@@ -152,13 +152,13 @@ export default function ProductCard({ product, onAddToCart }) {
           {/* Price Badges */}
           <div className="flex items-baseline flex-wrap gap-1.5 sm:gap-2">
             <span className="text-base sm:text-lg font-extrabold text-slate-900">
-              {formattedPrice}
+              ${formattedPrice}
             </span>
             <span className="text-[11px] sm:text-xs text-slate-400 line-through">
               {formattedOriginalPrice}
             </span>
             <span className="text-[10px] sm:text-[11px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded ml-auto sm:ml-0">
-              30% OFF
+              50% OFF
             </span>
           </div>
 
