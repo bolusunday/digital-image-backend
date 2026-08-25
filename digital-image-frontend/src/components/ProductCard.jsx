@@ -52,7 +52,7 @@ export default function ProductCard({ product, onAddToCart }) {
 
   const rawPrice = (Number(product.price || 0) / 100).toFixed(2);
   const priceInDollars = rawPrice > 500 ? rawPrice / 100 : rawPrice;
-  const originalPriceInDollars = priceInDollars * 1.5;
+  const originalPriceInDollars = priceInDollars * 2;
 
   const formattedPrice = priceInDollars.toLocaleString("en-US", {
     style: "currency",
