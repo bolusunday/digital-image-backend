@@ -439,7 +439,7 @@ export default function AdminDashboard() {
                        {" "}
             <p className="text-slate-500 text-xs sm:text-sm mt-1 font-medium">
                             Manage your store's digital inventory, categorize,
-              and upload new               assets.            {" "}
+              and upload new assets.            {" "}
             </p>
                      {" "}
           </div>

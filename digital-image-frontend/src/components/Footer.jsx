@@ -190,7 +190,7 @@ export default function Footer() {
                 <Send size={16} />
               </a>
               <a
-                href="mailto:support@yourdomain.com"
+                href="mailto:contact@pegty.com"
                 title="Email Support"
                 className="p-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white hover:border-zinc-700 hover:bg-zinc-800 transition-all active:scale-95"
               >
