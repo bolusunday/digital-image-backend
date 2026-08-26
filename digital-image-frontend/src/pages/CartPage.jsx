@@ -7,21 +7,36 @@ import CheckoutButton from "../components/CheckoutButton";
 export default function CartPage({
   cart = [],
   products = [],
+  isLoading = false,
   onRemoveFromCart,
   mockUserToken,
 }) {
-  // Synchronously compute updated cart values without network lag or price flickering
+  // 1. Show loading skeleton while fetching products from backend on refresh
+  if (isLoading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 animate-pulse">
+        <div className="h-8 bg-slate-200 rounded-xl w-48 mb-6" />
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
+          <div className="lg:col-span-8 space-y-4">
+            <div className="h-28 bg-slate-200 rounded-2xl w-full" />
+            <div className="h-28 bg-slate-200 rounded-2xl w-full" />
+          </div>
+          <div className="lg:col-span-4">
+            <div className="h-64 bg-slate-200 rounded-3xl w-full" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Synchronously compute updated prices against freshly loaded products
   const liveCart = cart.map((item) => {
     const fresh = products.find((p) => String(p.id) === String(item.id));
     return fresh ? { ...item, ...fresh, price: fresh.price } : item;
   });
 
-  // Always returns a raw Number in dollars (e.g. 100 cents -> 1.00 dollar)
-  const getItemPrice = (priceInCents) => {
-    return Number(priceInCents || 0) / 100;
-  };
+  const getItemPrice = (priceInCents) => Number(priceInCents || 0) / 100;
 
-  // Calculates total dollars using updated liveCart items
   const totalCartPriceDollars = liveCart.reduce(
     (sum, item) => sum + getItemPrice(item.price) * (item.quantity || 1),
     0,
@@ -69,9 +84,8 @@ export default function CartPage({
           </Link>
         </div>
       ) : (
-        /* Grid Layout: Responsive 1-Column on Phone/Tablet -> 12-Column Split on Desktop */
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
-          {/* Left Column: Cart Items List (8 cols on desktop) */}
+          {/* Left Column: Cart Items List */}
           <div className="lg:col-span-8 space-y-3 sm:space-y-4">
             {liveCart.map((item, index) => {
               const itemPriceDollars = getItemPrice(item.price);
@@ -80,7 +94,6 @@ export default function CartPage({
                   key={item.id ?? index}
                   className="bg-white border border-slate-200/90 rounded-2xl p-3 sm:p-4 flex gap-3 sm:gap-4 items-center shadow-xs hover:border-slate-300 transition-all"
                 >
-                  {/* Item Image Thumbnail */}
                   <Link to={`/product/${item.id}`} className="shrink-0">
                     <img
                       src={
@@ -93,7 +106,6 @@ export default function CartPage({
                     />
                   </Link>
 
-                  {/* Item Details */}
                   <div className="flex-1 min-w-0">
                     <Link
                       to={`/product/${item.id}`}
@@ -115,7 +127,6 @@ export default function CartPage({
                     </p>
                   </div>
 
-                  {/* Remove Button */}
                   {onRemoveFromCart && (
                     <button
                       onClick={() => onRemoveFromCart(index)}
@@ -131,7 +142,7 @@ export default function CartPage({
             })}
           </div>
 
-          {/* Right Column: Order Summary (4 cols on desktop) */}
+          {/* Right Column: Order Summary */}
           <div className="lg:col-span-4">
             <div className="bg-white border border-slate-200/90 rounded-2xl sm:rounded-3xl p-5 sm:p-6 h-fit sticky top-24 shadow-xs">
               <h2 className="text-base sm:text-lg font-extrabold text-slate-900 mb-4 pb-3 border-b border-slate-100">
@@ -159,7 +170,6 @@ export default function CartPage({
                 </div>
               </div>
 
-              {/* Stripe Checkout Button Component */}
               <CheckoutButton token={mockUserToken} cart={liveCart} />
             </div>
           </div>
