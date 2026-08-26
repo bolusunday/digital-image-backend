@@ -1,21 +1,49 @@
 // src/pages/CartPage.jsx
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Trash2, ShoppingBag, ArrowLeft, ShieldCheck } from "lucide-react";
 import CheckoutButton from "../components/CheckoutButton";
+import { API_URL } from "../config";
 
 export default function CartPage({
   cart = [],
   onRemoveFromCart,
   mockUserToken,
 }) {
+  const [liveCart, setLiveCart] = useState(cart);
+
+  // Sync cart items with latest backend product data (prices, titles, images)
+  useEffect(() => {
+    if (cart.length === 0) {
+      setLiveCart([]);
+      return;
+    }
+
+    fetch(`${API_URL}/api/products`)
+      .then((res) => (res.ok ? res.json() : []))
+      .then((products) => {
+        if (!Array.isArray(products) || products.length === 0) {
+          setLiveCart(cart);
+          return;
+        }
+
+        const updated = cart.map((item) => {
+          const fresh = products.find((p) => String(p.id) === String(item.id));
+          return fresh ? { ...item, ...fresh, price: fresh.price } : item;
+        });
+
+        setLiveCart(updated);
+      })
+      .catch(() => setLiveCart(cart));
+  }, [cart]);
+
   // ✅ FIX 1: Always returns a raw Number in dollars (e.g. 100 cents -> 1.00 dollar)
   const getItemPrice = (priceInCents) => {
     return Number(priceInCents || 0) / 100;
   };
 
-  // ✅ FIX 2: Correctly calculates total dollars using the helper function and quantity
-  const totalCartPriceDollars = cart.reduce(
+  // ✅ FIX 2: Correctly calculates total dollars using liveCart
+  const totalCartPriceDollars = liveCart.reduce(
     (sum, item) => sum + getItemPrice(item.price) * (item.quantity || 1),
     0,
   );
@@ -37,12 +65,12 @@ export default function CartPage({
           </h1>
         </div>
         <span className="text-[10px] sm:text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-3 py-1 rounded-full w-fit tracking-wider uppercase">
-          {cart.length} {cart.length === 1 ? "Item" : "Items"}
+          {liveCart.length} {liveCart.length === 1 ? "Item" : "Items"}
         </span>
       </div>
 
       {/* Empty Cart State */}
-      {cart.length === 0 ? (
+      {liveCart.length === 0 ? (
         <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 p-8 sm:p-12 text-center max-w-lg mx-auto shadow-xs my-6">
           <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
             <ShoppingBag size={28} />
@@ -66,11 +94,11 @@ export default function CartPage({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
           {/* Left Column: Cart Items List (8 cols on desktop) */}
           <div className="lg:col-span-8 space-y-3 sm:space-y-4">
-            {cart.map((item, index) => {
+            {liveCart.map((item, index) => {
               const itemPriceDollars = getItemPrice(item.price);
               return (
                 <div
-                  key={index}
+                  key={item.id ?? index}
                   className="bg-white border border-slate-200/90 rounded-2xl p-3 sm:p-4 flex gap-3 sm:gap-4 items-center shadow-xs hover:border-slate-300 transition-all"
                 >
                   {/* Item Image Thumbnail */}
@@ -133,7 +161,7 @@ export default function CartPage({
 
               <div className="space-y-3 text-xs sm:text-sm text-slate-600 mb-6">
                 <div className="flex justify-between">
-                  <span>Items ({cart.length})</span>
+                  <span>Items ({liveCart.length})</span>
                   <span className="font-bold text-slate-900">
                     ${totalCartPriceDollars.toFixed(2)}
                   </span>
@@ -153,7 +181,7 @@ export default function CartPage({
               </div>
 
               {/* Stripe Checkout Button Component */}
-              <CheckoutButton token={mockUserToken} cart={cart} />
+              <CheckoutButton token={mockUserToken} cart={liveCart} />
             </div>
           </div>
         </div>
