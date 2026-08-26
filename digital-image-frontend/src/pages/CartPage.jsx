@@ -1,48 +1,27 @@
 // src/pages/CartPage.jsx
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import { Trash2, ShoppingBag, ArrowLeft, ShieldCheck } from "lucide-react";
 import CheckoutButton from "../components/CheckoutButton";
-import { API_URL } from "../config";
 
 export default function CartPage({
   cart = [],
+  products = [],
   onRemoveFromCart,
   mockUserToken,
 }) {
-  const [liveCart, setLiveCart] = useState(cart);
+  // Synchronously compute updated cart values without network lag or price flickering
+  const liveCart = cart.map((item) => {
+    const fresh = products.find((p) => String(p.id) === String(item.id));
+    return fresh ? { ...item, ...fresh, price: fresh.price } : item;
+  });
 
-  // Sync cart items with latest backend product data (prices, titles, images)
-  useEffect(() => {
-    if (cart.length === 0) {
-      setLiveCart([]);
-      return;
-    }
-
-    fetch(`${API_URL}/api/products`)
-      .then((res) => (res.ok ? res.json() : []))
-      .then((products) => {
-        if (!Array.isArray(products) || products.length === 0) {
-          setLiveCart(cart);
-          return;
-        }
-
-        const updated = cart.map((item) => {
-          const fresh = products.find((p) => String(p.id) === String(item.id));
-          return fresh ? { ...item, ...fresh, price: fresh.price } : item;
-        });
-
-        setLiveCart(updated);
-      })
-      .catch(() => setLiveCart(cart));
-  }, [cart]);
-
-  // ✅ FIX 1: Always returns a raw Number in dollars (e.g. 100 cents -> 1.00 dollar)
+  // Always returns a raw Number in dollars (e.g. 100 cents -> 1.00 dollar)
   const getItemPrice = (priceInCents) => {
     return Number(priceInCents || 0) / 100;
   };
 
-  // ✅ FIX 2: Correctly calculates total dollars using liveCart
+  // Calculates total dollars using updated liveCart items
   const totalCartPriceDollars = liveCart.reduce(
     (sum, item) => sum + getItemPrice(item.price) * (item.quantity || 1),
     0,

@@ -82,12 +82,10 @@ function Home({ products, isLoading, onAddToCart }) {
       {/* Header Banner */}
       <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 border-b border-slate-200 pb-5 sm:pb-6">
         <div>
-          {/* ✅ Changed font-extrabold to font-semibold for a cleaner font weight */}
           <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-700 tracking-tight">
             {getHeaderTitle()}
           </h1>
 
-          {/* ✅ Displays ONLY on the All Products homepage */}
           {!currentCategory && !searchQuery && (
             <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium leading-relaxed">
               Discover our high-quality, unique and ready-to-use images in
@@ -155,7 +153,7 @@ export default function App() {
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // ✅ 1. Load cart from localStorage on initial render
+  // Load cart from localStorage on initial render
   const [cart, setCart] = useState(() => {
     try {
       const savedCart = localStorage.getItem("pegty_cart");
@@ -166,7 +164,7 @@ export default function App() {
     }
   });
 
-  // ✅ 2. Save cart to localStorage whenever cart state changes
+  // Save cart to localStorage whenever cart state changes
   useEffect(() => {
     try {
       localStorage.setItem("pegty_cart", JSON.stringify(cart));
@@ -234,7 +232,11 @@ export default function App() {
             <Route
               path="/cart"
               element={
-                <CartPage cart={cart} onRemoveFromCart={handleRemoveFromCart} />
+                <CartPage
+                  cart={cart}
+                  products={products}
+                  onRemoveFromCart={handleRemoveFromCart}
+                />
               }
             />
             <Route path="/success" element={<SuccessPage />} />
