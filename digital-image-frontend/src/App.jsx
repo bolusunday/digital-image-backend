@@ -235,6 +235,7 @@ export default function App() {
                 <CartPage
                   cart={cart}
                   products={products}
+                  isLoading={isLoading}
                   onRemoveFromCart={handleRemoveFromCart}
                 />
               }
