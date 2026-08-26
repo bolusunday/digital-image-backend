@@ -1,17 +1,65 @@
 // src/pages/CartPage.jsx
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Trash2, ShoppingBag, ArrowLeft, ShieldCheck } from "lucide-react";
 import CheckoutButton from "../components/CheckoutButton";
+import { API_URL } from "../config";
 
 export default function CartPage({
   cart = [],
-  products = [],
-  isLoading = false,
   onRemoveFromCart,
   mockUserToken,
 }) {
-  // 1. Show loading skeleton while fetching products from backend on refresh
+  const [liveCart, setLiveCart] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch fresh DB prices every time user navigates to Cart page
+  useEffect(() => {
+    let isMounted = true;
+
+    if (cart.length === 0) {
+      setLiveCart([]);
+      setIsLoading(false);
+      return;
+    }
+
+    fetch(`${API_URL}/api/products`)
+      .then((res) => (res.ok ? res.json() : []))
+      .then((freshProducts) => {
+        if (!isMounted) return;
+
+        if (Array.isArray(freshProducts) && freshProducts.length > 0) {
+          const updated = cart.map((item) => {
+            const fresh = freshProducts.find(
+              (p) => String(p.id) === String(item.id),
+            );
+            return fresh ? { ...item, ...fresh, price: fresh.price } : item;
+          });
+          setLiveCart(updated);
+        } else {
+          setLiveCart(cart);
+        }
+      })
+      .catch(() => {
+        if (isMounted) setLiveCart(cart);
+      })
+      .finally(() => {
+        if (isMounted) setIsLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [cart]);
+
+  const getItemPrice = (priceInCents) => Number(priceInCents || 0) / 100;
+
+  const totalCartPriceDollars = liveCart.reduce(
+    (sum, item) => sum + getItemPrice(item.price) * (item.quantity || 1),
+    0,
+  );
+
+  // 1. Loading Skeleton: Prevents old prices from flashing on navigation or refresh
   if (isLoading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 animate-pulse">
@@ -29,19 +77,7 @@ export default function CartPage({
     );
   }
 
-  // 2. Synchronously compute updated prices against freshly loaded products
-  const liveCart = cart.map((item) => {
-    const fresh = products.find((p) => String(p.id) === String(item.id));
-    return fresh ? { ...item, ...fresh, price: fresh.price } : item;
-  });
-
-  const getItemPrice = (priceInCents) => Number(priceInCents || 0) / 100;
-
-  const totalCartPriceDollars = liveCart.reduce(
-    (sum, item) => sum + getItemPrice(item.price) * (item.quantity || 1),
-    0,
-  );
-
+  // 2. Main Cart View (Only renders once fresh prices are ready)
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
       {/* Page Title & Back link */}
