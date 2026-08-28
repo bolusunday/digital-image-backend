@@ -10,6 +10,7 @@ const paymentRoutes = require("./routes/payment");
 const productRoutes = require("./routes/products");
 const verifyToken = require("./middleware/authMiddleware");
 const { generateSecureDownloadLink } = require("./utils/downloadSigner");
+const { sendOrderConfirmationEmail } = require("./utils/emailService");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -28,7 +29,6 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
@@ -42,7 +42,6 @@ app.use(
 // --------------- Auto-Fix & Create Database Schema on Startup ---------------
 (async () => {
   try {
-    // 1. Create primary tables (including PRODUCTS)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS products (
         id SERIAL PRIMARY KEY,
@@ -95,7 +94,6 @@ app.use(
       );
     `);
 
-    // 2. Patch missing columns on existing tables safely
     await pool.query(`
       ALTER TABLE products ADD COLUMN IF NOT EXISTS category VARCHAR(100) DEFAULT 'sport';
       ALTER TABLE orders ADD COLUMN IF NOT EXISTS user_id INTEGER NULL;
@@ -115,7 +113,6 @@ app.use(
       ALTER TABLE reviews ADD COLUMN IF NOT EXISTS user_name VARCHAR(255) DEFAULT 'Verified Buyer';
     `);
 
-    // 3. Auto-seed primary admin account
     const adminEmail = process.env.ADMIN_EMAIL || "adebolusunday86@gmail.com";
     const adminPassword = process.env.ADMIN_PASSWORD;
 
@@ -218,6 +215,22 @@ app.post(
           console.log(
             `✅ Order #${orderId} fulfilled successfully for (${customerEmail}).`,
           );
+
+          // Dispatch confirmation & review verification email
+          try {
+            await sendOrderConfirmationEmail({
+              customerEmail,
+              orderId,
+              paymentIntentId,
+              totalAmountCents,
+            });
+            console.log(`✉️ Order confirmation email sent to ${customerEmail}`);
+          } catch (emailErr) {
+            console.error(
+              "❌ Error sending confirmation email:",
+              emailErr.message,
+            );
+          }
         }
       } catch (dbErr) {
         console.error(
@@ -236,7 +249,6 @@ app.use(express.json());
 
 // --------------- Root & Health Check Routes ---------------
 
-// Fix: Add root route so visiting api.pegty.com directly returns 200 OK
 app.get("/", (req, res) => {
   res.status(200).json({
     message: "Pegty API is online and healthy 🚀",
@@ -244,7 +256,6 @@ app.get("/", (req, res) => {
   });
 });
 
-// Server Health Check Route
 app.get("/api/health", (req, res) => {
   res
     .status(200)

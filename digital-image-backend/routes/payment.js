@@ -2,6 +2,8 @@ const express = require("express");
 const router = express.Router();
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const pool = require("../config/db");
+const { generateSecureDownloadLink } = require("../utils/downloadSigner");
+const { sendOrderConfirmationEmail } = require("../utils/emailService");
 
 // Route: POST /api/payments/create-checkout-session
 router.post("/create-checkout-session", async (req, res) => {
@@ -51,7 +53,6 @@ router.post("/create-checkout-session", async (req, res) => {
       };
     });
 
-    // Strip trailing slashes to prevent formatted URL issues like pegty.com//success
     const rawClientUrl = process.env.CLIENT_URL || "https://pegty.com";
     const clientBaseUrl = rawClientUrl.replace(/\/+$/, "");
 
@@ -78,7 +79,7 @@ router.post("/create-checkout-session", async (req, res) => {
   }
 });
 
-// Route: GET /api/payments/verify-payment (WITH AUTO-SAVE ORDER FALLBACK)
+// Route: GET /api/payments/verify-payment (WITH AUTO-SAVE ORDER & EMAIL FALLBACK)
 router.get("/verify-payment", async (req, res) => {
   try {
     const { session_id } = req.query;
@@ -109,7 +110,7 @@ router.get("/verify-payment", async (req, res) => {
         .json({ error: "No products found for this purchase." });
     }
 
-    // --- FALLBACK ORDER CREATION (Ensures order is ALWAYS saved) ---
+    // --- FALLBACK ORDER CREATION (Ensures order & email are ALWAYS processed) ---
     let dbOrderId = null;
 
     const existingOrder = await pool.query(
@@ -120,7 +121,6 @@ router.get("/verify-payment", async (req, res) => {
     if (existingOrder.rows.length > 0) {
       dbOrderId = existingOrder.rows[0].id;
     } else {
-      // Order doesn't exist yet (webhook missed or delayed) -> Create it now
       const totalAmountCents = session.amount_total || 0;
       const firstProductId = productIds[0];
 
@@ -139,7 +139,6 @@ router.get("/verify-payment", async (req, res) => {
 
       dbOrderId = newOrderResult.rows[0].id;
 
-      // Create order_items records
       const productQuery = await pool.query(
         "SELECT id, price FROM products WHERE id = ANY($1)",
         [productIds],
@@ -157,6 +156,24 @@ router.get("/verify-payment", async (req, res) => {
         );
       }
       console.log(`✅ Order #${dbOrderId} saved via verify-payment fallback.`);
+
+      // Send confirmation email via fallback execution
+      try {
+        await sendOrderConfirmationEmail({
+          customerEmail,
+          orderId: dbOrderId,
+          paymentIntentId,
+          totalAmountCents,
+        });
+        console.log(
+          `✉️ Order confirmation email sent to ${customerEmail} (via verify-payment)`,
+        );
+      } catch (emailErr) {
+        console.error(
+          "❌ Error sending email in verify-payment fallback:",
+          emailErr.message,
+        );
+      }
     }
 
     // --- GENERATE DOWNLOAD LINKS ---
@@ -164,8 +181,6 @@ router.get("/verify-payment", async (req, res) => {
       "SELECT id, title, private_file_key FROM products WHERE id = ANY($1)",
       [productIds],
     );
-
-    const { generateSecureDownloadLink } = require("../utils/downloadSigner");
 
     const files = await Promise.all(
       productQuery.rows.map(async (product) => {
