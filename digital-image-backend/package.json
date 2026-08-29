@@ -23,8 +23,8 @@
     "multer": "^2.2.0",
     "multer-s3": "^3.0.1",
     "nodemailer": "^9.0.6",
-    "pg": "^8.22.0",
-    "stripe": "^22.3.2"
+    "pg": "^8.23.0",
+    "stripe": "^22.6.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"
