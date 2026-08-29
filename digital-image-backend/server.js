@@ -42,7 +42,7 @@ app.use(
 );
 
 // Handle CORS Preflight requests globally
-app.options("*", cors());
+app.options(/(.*)/, cors());
 
 // --------------- Stripe Webhook Listener (MUST BE BEFORE express.json) ---------------
 app.post(
