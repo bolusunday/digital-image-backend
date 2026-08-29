@@ -15,7 +15,7 @@ const { sendOrderConfirmationEmail } = require("./utils/emailService");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Required for SSL/HTTPS termination behind proxies (Render, AWS, Cloudflare, Heroku)
+// Enable reverse proxy trust for Hostinger/Cloudflare SSL termination
 app.set("trust proxy", 1);
 
 // --------------- Production CORS Policy ---------------
@@ -29,111 +29,20 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, or Postman)
       if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("CORS policy violation: Access blocked by server."));
+        return callback(null, true);
       }
+      return callback(null, false);
     },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
 
-// --------------- Auto-Fix & Create Database Schema on Startup ---------------
-(async () => {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS products (
-        id SERIAL PRIMARY KEY,
-        title VARCHAR(255) NOT NULL,
-        description TEXT,
-        price INTEGER NOT NULL,
-        category VARCHAR(100) DEFAULT 'sport',
-        public_thumb_url TEXT,
-        private_file_key TEXT,
-        rating_average NUMERIC DEFAULT 0,
-        rating_count INTEGER DEFAULT 0,
-        sales_count INTEGER DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        email VARCHAR(255) UNIQUE NOT NULL,
-        password_hash TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS orders (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER NULL,
-        customer_email VARCHAR(255),
-        stripe_payment_intent_id VARCHAR(255),
-        product_id INTEGER,
-        status VARCHAR(50) DEFAULT 'completed',
-        total_amount INTEGER,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS order_items (
-        id SERIAL PRIMARY KEY,
-        order_id INTEGER REFERENCES orders(id) ON DELETE CASCADE,
-        product_id INTEGER,
-        price_at_sale INTEGER
-      );
-
-      CREATE TABLE IF NOT EXISTS reviews (
-        id SERIAL PRIMARY KEY,
-        product_id INTEGER,
-        order_id INTEGER,
-        guest_email VARCHAR(255),
-        user_name VARCHAR(255) DEFAULT 'Verified Buyer',
-        rating INTEGER CHECK (rating >= 1 AND rating <= 5),
-        comment TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-
-    await pool.query(`
-      ALTER TABLE products ADD COLUMN IF NOT EXISTS category VARCHAR(100) DEFAULT 'sport';
-      ALTER TABLE orders ADD COLUMN IF NOT EXISTS user_id INTEGER NULL;
-      ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_email VARCHAR(255);
-      ALTER TABLE orders ADD COLUMN IF NOT EXISTS stripe_payment_intent_id VARCHAR(255);
-      ALTER TABLE orders ADD COLUMN IF NOT EXISTS product_id INTEGER;
-      ALTER TABLE orders ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'completed';
-      ALTER TABLE orders ADD COLUMN IF NOT EXISTS total_amount INTEGER;
-      ALTER TABLE orders ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
-      
-      ALTER TABLE order_items ADD COLUMN IF NOT EXISTS product_id INTEGER;
-      ALTER TABLE order_items ADD COLUMN IF NOT EXISTS price_at_sale INTEGER;
-      
-      ALTER TABLE reviews ADD COLUMN IF NOT EXISTS product_id INTEGER;
-      ALTER TABLE reviews ADD COLUMN IF NOT EXISTS order_id INTEGER;
-      ALTER TABLE reviews ADD COLUMN IF NOT EXISTS guest_email VARCHAR(255);
-      ALTER TABLE reviews ADD COLUMN IF NOT EXISTS user_name VARCHAR(255) DEFAULT 'Verified Buyer';
-    `);
-
-    const adminEmail = process.env.ADMIN_EMAIL || "adebolusunday86@gmail.com";
-    const adminPassword = process.env.ADMIN_PASSWORD;
-
-    if (adminPassword) {
-      const hashedAdminPassword = await bcrypt.hash(adminPassword, 10);
-      await pool.query(
-        `INSERT INTO users (email, password_hash)
-         VALUES ($1, $2)
-         ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash`,
-        [adminEmail, hashedAdminPassword],
-      );
-      console.log(
-        `✅ Database schema verified and admin user (${adminEmail}) synced.`,
-      );
-    } else {
-      console.warn("⚠️ ADMIN_PASSWORD not set in .env. Admin seeding skipped.");
-    }
-  } catch (err) {
-    console.error("❌ Database schema startup error:", err.message);
-  }
-})();
+// Handle CORS Preflight requests globally
+app.options("*", cors());
 
 // --------------- Stripe Webhook Listener (MUST BE BEFORE express.json) ---------------
 app.post(
@@ -216,7 +125,6 @@ app.post(
             `✅ Order #${orderId} fulfilled successfully for (${customerEmail}).`,
           );
 
-          // Dispatch confirmation & review verification email
           try {
             await sendOrderConfirmationEmail({
               customerEmail,
@@ -248,7 +156,6 @@ app.post(
 app.use(express.json());
 
 // --------------- Root & Health Check Routes ---------------
-
 app.get("/", (req, res) => {
   res.status(200).json({
     message: "Pegty API is online and healthy 🚀",
@@ -267,72 +174,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/products", productRoutes);
 
-// --------------- Public Catalog Routes ---------------
-
-app.get("/api/products", async (req, res) => {
-  try {
-    const { category } = req.query;
-    let queryText = `
-      SELECT 
-        id, 
-        title, 
-        description, 
-        price, 
-        category,
-        public_thumb_url,
-        COALESCE(rating_average, 0) AS rating_average,
-        COALESCE(rating_count, 0) AS rating_count,
-        COALESCE(sales_count, 0) AS sales_count
-       FROM products`;
-    const params = [];
-
-    if (category && category.toLowerCase() !== "all") {
-      queryText += ` WHERE LOWER(category) = $1`;
-      params.push(category.toLowerCase().trim());
-    }
-
-    queryText += ` ORDER BY created_at DESC`;
-
-    const result = await pool.query(queryText, params);
-    res.json(result.rows);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).json({ error: "Server error fetching products." });
-  }
-});
-
-app.get("/api/products/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const result = await pool.query(
-      `SELECT 
-        id, 
-        title, 
-        description, 
-        price, 
-        category,
-        public_thumb_url,
-        COALESCE(rating_average, 0) AS rating_average,
-        COALESCE(rating_count, 0) AS rating_count,
-        COALESCE(sales_count, 0) AS sales_count
-       FROM products 
-       WHERE id = $1`,
-      [id],
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Product not found" });
-    }
-
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).json({ error: "Server error fetching product details." });
-  }
-});
-
 // --------------- Protected Asset Routes ---------------
-
 app.get("/api/download/:productId", verifyToken, async (req, res) => {
   try {
     const { productId } = req.params;
@@ -431,7 +273,6 @@ app.put("/api/admin/products/:id", async (req, res) => {
 });
 
 // --------------- Reviews API Routes ---------------
-
 app.get("/api/products/:id/reviews", async (req, res) => {
   const productId = req.params.id;
   try {
@@ -553,7 +394,105 @@ app.post("/api/products/:id/guest-reviews", async (req, res) => {
   }
 });
 
-// --------------- Start Server ---------------
+// --------------- Non-blocking Database Initialization Function ---------------
+async function initDbSchema() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS products (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        price INTEGER NOT NULL,
+        category VARCHAR(100) DEFAULT 'sport',
+        public_thumb_url TEXT,
+        private_file_key TEXT,
+        rating_average NUMERIC DEFAULT 0,
+        rating_count INTEGER DEFAULT 0,
+        sales_count INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS orders (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NULL,
+        customer_email VARCHAR(255),
+        stripe_payment_intent_id VARCHAR(255),
+        product_id INTEGER,
+        status VARCHAR(50) DEFAULT 'completed',
+        total_amount INTEGER,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS order_items (
+        id SERIAL PRIMARY KEY,
+        order_id INTEGER REFERENCES orders(id) ON DELETE CASCADE,
+        product_id INTEGER,
+        price_at_sale INTEGER
+      );
+
+      CREATE TABLE IF NOT EXISTS reviews (
+        id SERIAL PRIMARY KEY,
+        product_id INTEGER,
+        order_id INTEGER,
+        guest_email VARCHAR(255),
+        user_name VARCHAR(255) DEFAULT 'Verified Buyer',
+        rating INTEGER CHECK (rating >= 1 AND rating <= 5),
+        comment TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await pool.query(`
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS category VARCHAR(100) DEFAULT 'sport';
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS user_id INTEGER NULL;
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_email VARCHAR(255);
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS stripe_payment_intent_id VARCHAR(255);
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS product_id INTEGER;
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'completed';
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS total_amount INTEGER;
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+      
+      ALTER TABLE order_items ADD COLUMN IF NOT EXISTS product_id INTEGER;
+      ALTER TABLE order_items ADD COLUMN IF NOT EXISTS price_at_sale INTEGER;
+      
+      ALTER TABLE reviews ADD COLUMN IF NOT EXISTS product_id INTEGER;
+      ALTER TABLE reviews ADD COLUMN IF NOT EXISTS order_id INTEGER;
+      ALTER TABLE reviews ADD COLUMN IF NOT EXISTS guest_email VARCHAR(255);
+      ALTER TABLE reviews ADD COLUMN IF NOT EXISTS user_name VARCHAR(255) DEFAULT 'Verified Buyer';
+    `);
+
+    const adminEmail = process.env.ADMIN_EMAIL || "adebolusunday86@gmail.com";
+    const adminPassword = process.env.ADMIN_PASSWORD;
+
+    if (adminPassword) {
+      const hashedAdminPassword = await bcrypt.hash(adminPassword, 10);
+      await pool.query(
+        `INSERT INTO users (email, password_hash)
+         VALUES ($1, $2)
+         ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash`,
+        [adminEmail, hashedAdminPassword],
+      );
+      console.log(
+        `✅ Database schema verified and admin user (${adminEmail}) synced.`,
+      );
+    } else {
+      console.warn("⚠️ ADMIN_PASSWORD not set in .env. Admin seeding skipped.");
+    }
+  } catch (err) {
+    console.error("❌ Database schema startup error:", err.message);
+  }
+}
+
+// --------------- Start Server First ---------------
 app.listen(PORT, () => {
   console.log(`🚀 Production server running for pegty.com on port ${PORT}`);
+  // Run DB schema setup asynchronously after server is listening
+  initDbSchema();
 });
