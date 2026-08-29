@@ -1,12 +1,30 @@
 const express = require("express");
 const router = express.Router();
-const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const pool = require("../config/db");
 const { generateSecureDownloadLink } = require("../utils/downloadSigner");
 const { sendOrderConfirmationEmail } = require("../utils/emailService");
 
+// Safe Stripe Initialization Guard
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+let stripe = null;
+
+if (stripeSecretKey) {
+  stripe = require("stripe")(stripeSecretKey);
+} else {
+  console.warn(
+    "⚠️ STRIPE_SECRET_KEY is missing in environment variables. Payment routes are disabled.",
+  );
+}
+
 // Route: POST /api/payments/create-checkout-session
 router.post("/create-checkout-session", async (req, res) => {
+  if (!stripe) {
+    return res.status(500).json({
+      error:
+        "Payment gateway is not configured. STRIPE_SECRET_KEY is missing on server.",
+    });
+  }
+
   try {
     const { productIds, email } = req.body;
     const userId = req.user ? req.user.id : "guest";
@@ -81,6 +99,13 @@ router.post("/create-checkout-session", async (req, res) => {
 
 // Route: GET /api/payments/verify-payment (WITH AUTO-SAVE ORDER & EMAIL FALLBACK)
 router.get("/verify-payment", async (req, res) => {
+  if (!stripe) {
+    return res.status(500).json({
+      error:
+        "Payment gateway is not configured. STRIPE_SECRET_KEY is missing on server.",
+    });
+  }
+
   try {
     const { session_id } = req.query;
 
