@@ -4,7 +4,16 @@ const express = require("express");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const pool = require("./config/db");
-const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+
+// Safe Stripe initialization guard
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+const stripe = stripeSecretKey ? require("stripe")(stripeSecretKey) : null;
+if (!stripe) {
+  console.warn(
+    "⚠️ STRIPE_SECRET_KEY is missing. Stripe webhook features disabled.",
+  );
+}
+
 const authRoutes = require("./routes/auth");
 const paymentRoutes = require("./routes/payment");
 const productRoutes = require("./routes/products");
@@ -29,26 +38,29 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, curl, or Postman)
+      // Allow requests with no origin (mobile apps, curl, Postman) or matched allowed origins
       if (!origin || allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
-      return callback(null, false);
+      return callback(new Error(`CORS policy blocked request from: ${origin}`));
     },
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
-
-// Handle CORS Preflight requests globally
-app.options(/(.*)/, cors());
 
 // --------------- Stripe Webhook Listener (MUST BE BEFORE express.json) ---------------
 app.post(
   "/api/webhook",
   express.raw({ type: "application/json" }),
   async (req, res) => {
+    if (!stripe) {
+      return res
+        .status(500)
+        .json({ error: "Stripe is not configured on server." });
+    }
+
     const sig = req.headers["stripe-signature"];
     let event;
 
@@ -493,6 +505,5 @@ async function initDbSchema() {
 // --------------- Start Server First ---------------
 app.listen(PORT, () => {
   console.log(`🚀 Production server running for pegty.com on port ${PORT}`);
-  // Run DB schema setup asynchronously after server is listening
   initDbSchema();
 });
