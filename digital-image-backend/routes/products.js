@@ -52,13 +52,52 @@ const uploadFields = (req, res, next) => {
 };
 
 // ----------------------------------------------------------------------
-// 2. POST /api/products/upload (Protected Route)
+// 2. GET /api/products (Fetch All Products)
+// ----------------------------------------------------------------------
+router.get("/", async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT id, title, description, price, category, public_thumb_url, rating_average, rating_count, sales_count, created_at FROM products ORDER BY id DESC",
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error("❌ Error fetching products:", err.message);
+    res.status(500).json({ error: "Failed to load products." });
+  }
+});
+
+// ----------------------------------------------------------------------
+// 3. GET /api/products/:id (Fetch Single Product by ID)
+// ----------------------------------------------------------------------
+router.get("/:id", async (req, res) => {
+  const productId = parseInt(req.params.id, 10);
+  if (isNaN(productId)) {
+    return res.status(400).json({ error: "Invalid product ID format." });
+  }
+
+  try {
+    const result = await pool.query("SELECT * FROM products WHERE id = $1", [
+      productId,
+    ]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Product not found." });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("❌ Error fetching product details:", err.message);
+    res.status(500).json({ error: "Failed to load product details." });
+  }
+});
+
+// ----------------------------------------------------------------------
+// 4. POST /api/products/upload (Protected Route)
 // ----------------------------------------------------------------------
 router.post("/upload", verifyToken, uploadFields, async (req, res) => {
   try {
     const { title, description, price, category } = req.body;
 
-    // Basic Validation
     if (!title || !price) {
       return res.status(400).json({ error: "Title and price are required." });
     }
@@ -72,18 +111,15 @@ router.post("/upload", verifyToken, uploadFields, async (req, res) => {
       });
     }
 
-    // S3 Public Thumbnail URL & Private Key
     const publicThumbUrl = thumbnailFile.location;
     const privateFileKey = originalFile.key;
 
-    // Price converted to integer cents
     const priceInCents = Math.round(parseFloat(price) * 100);
 
     if (isNaN(priceInCents)) {
       return res.status(400).json({ error: "Invalid price provided." });
     }
 
-    // Save into PostgreSQL
     const insertQuery = `
       INSERT INTO products (title, description, price, public_thumb_url, private_file_key, category)
       VALUES ($1, $2, $3, $4, $5, $6)
@@ -111,7 +147,7 @@ router.post("/upload", verifyToken, uploadFields, async (req, res) => {
 });
 
 // ----------------------------------------------------------------------
-// 3. DELETE /api/products/:id (Protected Route)
+// 5. DELETE /api/products/:id (Protected Route)
 // ----------------------------------------------------------------------
 router.delete("/:id", verifyToken, async (req, res) => {
   try {
@@ -167,19 +203,17 @@ router.delete("/:id", verifyToken, async (req, res) => {
 });
 
 // ----------------------------------------------------------------------
-// 4. POST /api/products/:id/guest-reviews (WITH SAFE PURCHASE VERIFICATION)
+// 6. POST /api/products/:id/guest-reviews
 // ----------------------------------------------------------------------
 router.post("/:id/guest-reviews", async (req, res) => {
   const productId = Number(req.params.id);
   const { rating, orderId, email, customer_email, displayName, comment } =
     req.body;
 
-  // Accept either email or customer_email field from payload
   const rawEmail = email || customer_email || "";
   const normalizedEmail = String(rawEmail).toLowerCase().trim();
   const rawOrderId = String(orderId || "").trim();
 
-  // Basic Inputs Validation
   if (!rawOrderId || !normalizedEmail) {
     return res.status(400).json({
       error: "Order ID and Checkout Email are required to verify purchase.",
@@ -198,7 +232,6 @@ router.post("/:id/guest-reviews", async (req, res) => {
   }
 
   try {
-    // 1. VERIFY ORDER: Use CAST(id AS TEXT) to avoid PostgreSQL integer/string mismatch crashes
     const orderCheck = await pool.query(
       `SELECT id, product_id, customer_email 
        FROM orders 
@@ -217,7 +250,6 @@ router.post("/:id/guest-reviews", async (req, res) => {
 
     const verifiedOrder = orderCheck.rows[0];
 
-    // 2. DUPLICATE REVIEW CHECK
     const duplicateCheck = await pool.query(
       `SELECT id FROM reviews WHERE CAST(order_id AS TEXT) = $1 AND product_id = $2`,
       [String(verifiedOrder.id), productId],
@@ -229,7 +261,6 @@ router.post("/:id/guest-reviews", async (req, res) => {
       });
     }
 
-    // 3. FETCH CURRENT PRODUCT STATS
     const productResult = await pool.query(
       "SELECT rating_average, rating_count FROM products WHERE id = $1",
       [productId],
@@ -242,14 +273,12 @@ router.post("/:id/guest-reviews", async (req, res) => {
     const currentAvg = Number(productResult.rows[0].rating_average) || 0;
     const currentCount = Number(productResult.rows[0].rating_count) || 0;
 
-    // 4. CALCULATE NEW AVERAGE RATING
     const newRatingCount = currentCount + 1;
     const totalScore = currentAvg * currentCount + numericRating;
     const newRatingAverage = parseFloat(
       (totalScore / newRatingCount).toFixed(1),
     );
 
-    // 5. UPDATE PRODUCT TABLE AGGREGATES
     const updateResult = await pool.query(
       `UPDATE products 
        SET rating_average = $1, rating_count = $2 
@@ -258,7 +287,6 @@ router.post("/:id/guest-reviews", async (req, res) => {
       [newRatingAverage, newRatingCount, productId],
     );
 
-    // 6. PERSIST REVIEW RECORD
     const insertReviewResult = await pool.query(
       `INSERT INTO reviews (product_id, order_id, user_name, rating, comment)
        VALUES ($1, $2, $3, $4, $5)
