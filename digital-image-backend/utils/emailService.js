@@ -30,6 +30,7 @@ async function sendOrderConfirmationEmail({
     subject: `Order Confirmation #${orderId} - Your Pegty Verified Buyer Details`,
     html: `
       <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; color: #0f172a;">
+        
         <div style="background-color: #4f46e5; padding: 32px 24px; text-align: center;">
           <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Thank You for Your Order!</h1>
           <p style="color: #c7d2fe; margin-top: 8px; font-size: 14px;">Your digital assets are ready for download.</p>
@@ -37,18 +38,28 @@ async function sendOrderConfirmationEmail({
 
         <div style="padding: 28px 24px;">
           <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px;">
-              <span style="font-size: 13px; color: #64748b; font-weight: 600;">Order ID</span>
-              <span style="font-size: 14px; color: #0f172a; font-weight: 700;">#${orderId}</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px;">
-              <span style="font-size: 13px; color: #64748b; font-weight: 600;">Payment Reference</span>
-              <span style="font-size: 13px; color: #0f172a; font-family: monospace;">${paymentIntentId}</span>
-            </div>
-            <div style="display: flex; justify-content: space-between;">
-              <span style="font-size: 13px; color: #64748b; font-weight: 600;">Total Paid</span>
-              <span style="font-size: 16px; color: #4f46e5; font-weight: 800;">$${totalFormatted} USD</span>
-            </div>
+            
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px;">
+              <tr>
+                <td style="font-size: 13px; color: #64748b; font-weight: 600;">Order ID</td>
+                <td align="right" style="font-size: 14px; color: #0f172a; font-weight: 700;">#${orderId}</td>
+              </tr>
+            </table>
+
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px;">
+              <tr>
+                <td style="font-size: 13px; color: #64748b; font-weight: 600;">Payment Reference</td>
+                <td align="right" style="font-size: 13px; color: #0f172a; font-family: monospace;">${paymentIntentId}</td>
+              </tr>
+            </table>
+
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td style="font-size: 13px; color: #64748b; font-weight: 600;">Total Paid</td>
+                <td align="right" style="font-size: 16px; color: #4f46e5; font-weight: 800;">$${totalFormatted} USD</td>
+              </tr>
+            </table>
+
           </div>
 
           <div style="background-color: #eef2ff; border: 1px dashed #6366f1; border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 24px;">
@@ -58,7 +69,7 @@ async function sendOrderConfirmationEmail({
             <p style="margin: 0 0 12px 0; font-size: 13px; color: #3730a3;">
               Use your Order ID along with your email address (<strong>${customerEmail}</strong>) when leaving product ratings or reviews:
             </p>
-            <div style="background-color: #ffffff; border: 1px solid #c7d2fe; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 16px; font-weight: bold; color: #1e1b4b; display: inline-block;">
+            <div style="background-color: #ffffff; border: 1px solid #c7d2fe; padding: 10px 16px; border-radius: 8px; font-family: monospace; font-size: 16px; font-weight: bold; color: #1e1b4b; display: inline-block;">
               Order ID: #${orderId}
             </div>
           </div>

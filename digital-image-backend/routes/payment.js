@@ -97,7 +97,7 @@ router.post("/create-checkout-session", async (req, res) => {
   }
 });
 
-// Route: GET /api/payments/verify-payment (WITH AUTO-SAVE ORDER & EMAIL FALLBACK)
+// Route: GET /api/payments/verify-payment (RACE-CONDITION SAFE)
 router.get("/verify-payment", async (req, res) => {
   if (!stripe) {
     return res.status(500).json({
@@ -135,9 +135,10 @@ router.get("/verify-payment", async (req, res) => {
         .json({ error: "No products found for this purchase." });
     }
 
-    // --- FALLBACK ORDER CREATION (Ensures order & email are ALWAYS processed) ---
     let dbOrderId = null;
+    let isNewOrder = false;
 
+    // Check existing order first
     const existingOrder = await pool.query(
       `SELECT id FROM orders WHERE stripe_payment_intent_id = $1 LIMIT 1`,
       [paymentIntentId],
@@ -149,9 +150,11 @@ router.get("/verify-payment", async (req, res) => {
       const totalAmountCents = session.amount_total || 0;
       const firstProductId = productIds[0];
 
+      // Atomic insert preventing duplicate records if Webhook fires simultaneously
       const newOrderResult = await pool.query(
         `INSERT INTO orders (user_id, customer_email, stripe_payment_intent_id, product_id, status, total_amount, created_at)
          VALUES ($1, $2, $3, $4, 'completed', $5, NOW())
+         ON CONFLICT (stripe_payment_intent_id) DO NOTHING
          RETURNING id`,
         [
           userId,
@@ -162,46 +165,58 @@ router.get("/verify-payment", async (req, res) => {
         ],
       );
 
-      dbOrderId = newOrderResult.rows[0].id;
+      if (newOrderResult.rows.length > 0) {
+        dbOrderId = newOrderResult.rows[0].id;
+        isNewOrder = true;
 
-      const productQuery = await pool.query(
-        "SELECT id, price FROM products WHERE id = ANY($1)",
-        [productIds],
-      );
-
-      for (const item of productQuery.rows) {
-        await pool.query(
-          `INSERT INTO order_items (order_id, product_id, price_at_sale) VALUES ($1, $2, $3)`,
-          [dbOrderId, item.id, item.price],
+        const productQuery = await pool.query(
+          "SELECT id, price FROM products WHERE id = ANY($1)",
+          [productIds],
         );
 
-        await pool.query(
-          "UPDATE products SET sales_count = COALESCE(sales_count, 0) + 1 WHERE id = $1",
-          [item.id],
-        );
-      }
-      console.log(`✅ Order #${dbOrderId} saved via verify-payment fallback.`);
+        for (const item of productQuery.rows) {
+          await pool.query(
+            `INSERT INTO order_items (order_id, product_id, price_at_sale) VALUES ($1, $2, $3)`,
+            [dbOrderId, item.id, item.price],
+          );
 
-      // Send confirmation email via fallback execution
-      try {
-        await sendOrderConfirmationEmail({
-          customerEmail,
-          orderId: dbOrderId,
-          paymentIntentId,
-          totalAmountCents,
-        });
+          await pool.query(
+            "UPDATE products SET sales_count = COALESCE(sales_count, 0) + 1 WHERE id = $1",
+            [item.id],
+          );
+        }
         console.log(
-          `✉️ Order confirmation email sent to ${customerEmail} (via verify-payment)`,
+          `✅ Order #${dbOrderId} saved via verify-payment fallback.`,
         );
-      } catch (emailErr) {
-        console.error(
-          "❌ Error sending email in verify-payment fallback:",
-          emailErr.message,
+
+        // Only send email if order was newly created by this request
+        try {
+          await sendOrderConfirmationEmail({
+            customerEmail,
+            orderId: dbOrderId,
+            paymentIntentId,
+            totalAmountCents,
+          });
+          console.log(
+            `✉️ Order confirmation email sent to ${customerEmail} (via verify-payment)`,
+          );
+        } catch (emailErr) {
+          console.error(
+            "❌ Error sending email in verify-payment fallback:",
+            emailErr.message,
+          );
+        }
+      } else {
+        // Fallback query if conflict occurred (webhook won the race)
+        const recheck = await pool.query(
+          `SELECT id FROM orders WHERE stripe_payment_intent_id = $1 LIMIT 1`,
+          [paymentIntentId],
         );
+        dbOrderId = recheck.rows[0]?.id || null;
       }
     }
 
-    // --- GENERATE DOWNLOAD LINKS ---
+    // Generate signed download links
     const productQuery = await pool.query(
       "SELECT id, title, private_file_key FROM products WHERE id = ANY($1)",
       [productIds],
