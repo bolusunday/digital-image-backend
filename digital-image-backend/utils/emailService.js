@@ -1,13 +1,19 @@
 const nodemailer = require("nodemailer");
 
+// Default specifically to Hostinger Webmail specifications (Port 465 SSL)
+const smtpHost = process.env.SMTP_HOST || "smtp.hostinger.com";
+const smtpPort = parseInt(process.env.SMTP_PORT || "465", 10);
+const isSecure = smtpPort === 465 || process.env.SMTP_SECURE === "true";
+
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || "smtp.gmail.com",
-  port: parseInt(process.env.SMTP_PORT || "587", 10),
-  secure: process.env.SMTP_SECURE === "true",
+  host: smtpHost,
+  port: smtpPort,
+  secure: isSecure,
   auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
+    user: process.env.SMTP_USER ? process.env.SMTP_USER.trim() : "",
+    pass: process.env.SMTP_PASS ? process.env.SMTP_PASS.trim() : "",
   },
+  connectionTimeout: 10000, // Prevent hanging connections on shared hosting
 });
 
 async function sendOrderConfirmationEmail({
@@ -16,17 +22,24 @@ async function sendOrderConfirmationEmail({
   paymentIntentId,
   totalAmountCents,
 }) {
-  if (!customerEmail) return;
+  if (!customerEmail) {
+    console.error(
+      "❌ Order email skipped: customerEmail is undefined or empty.",
+    );
+    return;
+  }
 
+  const cleanCustomerEmail = customerEmail.trim();
+  const cleanSmtpUser = process.env.SMTP_USER
+    ? process.env.SMTP_USER.trim()
+    : "";
   const totalFormatted = (totalAmountCents / 100).toFixed(2);
   const siteUrl =
     process.env.CLIENT_URL || process.env.FRONTEND_URL || "https://pegty.com";
 
   const mailOptions = {
-    from:
-      process.env.FROM_EMAIL ||
-      `"Pegty Marketplace" <${process.env.SMTP_USER}>`,
-    to: customerEmail,
+    from: process.env.FROM_EMAIL || `"Pegty Marketplace" <${cleanSmtpUser}>`,
+    to: cleanCustomerEmail,
     subject: `Order Confirmation #${orderId} - Your Pegty Verified Buyer Details`,
     html: `
       <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; color: #0f172a;">
@@ -67,7 +80,7 @@ async function sendOrderConfirmationEmail({
               Verified Buyer Verification Credentials
             </p>
             <p style="margin: 0 0 12px 0; font-size: 13px; color: #3730a3;">
-              Use your Order ID along with your email address (<strong>${customerEmail}</strong>) when leaving product ratings or reviews:
+              Use your Order ID along with your email address (<strong>${cleanCustomerEmail}</strong>) when leaving product ratings or reviews:
             </p>
             <div style="background-color: #ffffff; border: 1px solid #c7d2fe; padding: 10px 16px; border-radius: 8px; font-family: monospace; font-size: 16px; font-weight: bold; color: #1e1b4b; display: inline-block;">
               Order ID: #${orderId}
@@ -88,7 +101,18 @@ async function sendOrderConfirmationEmail({
     `,
   };
 
-  await transporter.sendMail(mailOptions);
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log(
+      `✉️ Order confirmation email delivered to ${cleanCustomerEmail}. MessageId: ${info.messageId}`,
+    );
+    return info;
+  } catch (error) {
+    console.error("❌ Hostinger Webmail Transmission Failure:");
+    console.error("Message:", error.message);
+    if (error.response) console.error("Server Response:", error.response);
+    throw error;
+  }
 }
 
 module.exports = { sendOrderConfirmationEmail };
