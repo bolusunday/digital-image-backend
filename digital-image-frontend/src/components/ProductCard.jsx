@@ -77,10 +77,10 @@ export default function ProductCard({ product, onAddToCart }) {
 
   return (
     <div className="group relative bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-xs hover:shadow-xl hover:border-slate-300 transition-all duration-300 flex flex-col justify-between h-[420px] sm:h-[460px] lg:h-[480px]">
-      {/* 1. IMAGE CONTAINER: Strictly set to 75% height of the card on desktop */}
+      {/* 1. IMAGE CONTAINER: Padding removed and object-cover applied to fill entirety */}
       <Link
         to={`/product/${product.id}`}
-        className="relative w-full h-[70%] lg:h-[75%] bg-slate-100/80 flex items-center justify-center p-3.5 block shrink-0 overflow-hidden"
+        className="relative w-full h-[70%] lg:h-[75%] bg-slate-100/80 block shrink-0 overflow-hidden"
       >
         <img
           src={
@@ -91,7 +91,7 @@ export default function ProductCard({ product, onAddToCart }) {
           }
           alt={product.title}
           loading="lazy"
-          className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500 ease-out"
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
         />
 
         {/* Favorite Button Overlay */}
