@@ -1,7 +1,7 @@
 // src/components/ProductCard.jsx
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { Heart, ShoppingCart, Star, Check } from "lucide-react";
+import { ShoppingCart, Star, Check } from "lucide-react";
 
 // Helper to reliably retrieve rating stats or generate deterministic fallbacks
 const getProductStats = (product) => {
@@ -46,7 +46,6 @@ const getProductStats = (product) => {
 };
 
 export default function ProductCard({ product, onAddToCart }) {
-  const [isFavorite, setIsFavorite] = useState(false);
   const [isAdded, setIsAdded] = useState(false);
   const { ratingAverage, ratingCount, salesCount } = getProductStats(product);
 
@@ -75,42 +74,34 @@ export default function ProductCard({ product, onAddToCart }) {
     }
   };
 
+  const imageUrl =
+    product.public_thumb_url ||
+    product.imageUrl ||
+    product.image ||
+    "https://via.placeholder.com/400x300";
+
   return (
     <div className="group relative bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-xs hover:shadow-xl hover:border-slate-300 transition-all duration-300 flex flex-col justify-between h-[420px] sm:h-[460px] lg:h-[480px]">
-      {/* 1. IMAGE CONTAINER: Padding removed and object-cover applied to fill entirety */}
+      {/* 1. IMAGE CONTAINER */}
       <Link
         to={`/product/${product.id}`}
         className="relative w-full h-[70%] lg:h-[75%] bg-slate-100/80 block shrink-0 overflow-hidden"
       >
+        {/* Layer 1: Ambient background blur */}
         <img
-          src={
-            product.public_thumb_url ||
-            product.imageUrl ||
-            product.image ||
-            "https://via.placeholder.com/400x300"
-          }
-          alt={product.title}
-          loading="lazy"
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+          src={imageUrl}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 w-full h-full object-cover blur-xl scale-110 opacity-35 pointer-events-none select-none"
         />
 
-        {/* Favorite Button Overlay */}
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setIsFavorite(!isFavorite);
-          }}
-          className="absolute top-2.5 right-2.5 p-2 sm:p-2.5 bg-white/90 hover:bg-white backdrop-blur-md rounded-full shadow-md text-slate-600 hover:text-rose-500 active:scale-90 transition-all duration-200 cursor-pointer z-10"
-          aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-        >
-          <Heart
-            size={16}
-            className={
-              isFavorite ? "fill-rose-500 text-rose-500" : "text-slate-600"
-            }
-          />
-        </button>
+        {/* Layer 2: Main image fitted completely without clipping */}
+        <img
+          src={imageUrl}
+          alt={product.title}
+          loading="lazy"
+          className="relative z-0 w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-500 ease-out"
+        />
 
         {/* Category Badge Overlay */}
         <span className="absolute bottom-2.5 left-2.5 bg-slate-900/80 backdrop-blur-md text-[10px] font-semibold px-2 py-0.5 rounded-md text-white shadow-xs z-10 capitalize">
@@ -118,7 +109,7 @@ export default function ProductCard({ product, onAddToCart }) {
         </span>
       </Link>
 
-      {/* 2. DETAILS SECTION: Remaining 25% height of the card */}
+      {/* 2. DETAILS SECTION */}
       <div className="h-[30%] lg:h-[25%] p-3 sm:p-3.5 flex flex-col justify-between shrink-0 bg-white">
         <div>
           {/* Title */}
