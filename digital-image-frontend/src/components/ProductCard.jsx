@@ -82,16 +82,16 @@ export default function ProductCard({ product, onAddToCart }) {
 
   return (
     <div className="group relative w-full bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-xs hover:shadow-xl hover:border-slate-300 transition-all duration-300 flex flex-col justify-between h-full">
-      {/* 1. IMAGE CONTAINER WITH RESPONSIVE ASPECT RATIO */}
+      {/* 1. IMAGE CONTAINER - USES OBJECT-CONTAIN TO PREVENT ANY CROPPING */}
       <Link
         to={`/product/${product.id}`}
-        className="relative w-full aspect-[4/3] bg-slate-100 block shrink-0 overflow-hidden"
+        className="relative w-full aspect-[4/3] bg-slate-100/60 p-2 sm:p-3 block shrink-0 overflow-hidden"
       >
         <img
           src={imageUrl}
           alt={product.title}
           loading="lazy"
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+          className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500 ease-out"
         />
 
         {/* Category Badge Overlay */}
