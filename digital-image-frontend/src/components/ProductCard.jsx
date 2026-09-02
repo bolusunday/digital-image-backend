@@ -74,12 +74,6 @@ export default function ProductCard({ product, onAddToCart }) {
     }
   };
 
-  const imageUrl =
-    product.public_thumb_url ||
-    product.imageUrl ||
-    product.image ||
-    "https://via.placeholder.com/400x300";
-
   return (
     <div className="group relative bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-xs hover:shadow-xl hover:border-slate-300 transition-all duration-300 flex flex-col justify-between h-[420px] sm:h-[460px] lg:h-[480px]">
       {/* 1. IMAGE CONTAINER */}
@@ -87,20 +81,16 @@ export default function ProductCard({ product, onAddToCart }) {
         to={`/product/${product.id}`}
         className="relative w-full h-[70%] lg:h-[75%] bg-slate-100/80 block shrink-0 overflow-hidden"
       >
-        {/* Layer 1: Ambient background blur */}
         <img
-          src={imageUrl}
-          alt=""
-          aria-hidden="true"
-          className="absolute inset-0 w-full h-full object-cover blur-xl scale-110 opacity-35 pointer-events-none select-none"
-        />
-
-        {/* Layer 2: Main image fitted completely without clipping */}
-        <img
-          src={imageUrl}
+          src={
+            product.public_thumb_url ||
+            product.imageUrl ||
+            product.image ||
+            "https://via.placeholder.com/400x300"
+          }
           alt={product.title}
           loading="lazy"
-          className="relative z-0 w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-500 ease-out"
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
         />
 
         {/* Category Badge Overlay */}
