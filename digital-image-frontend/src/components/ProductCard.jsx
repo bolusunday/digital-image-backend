@@ -74,33 +74,34 @@ export default function ProductCard({ product, onAddToCart }) {
     }
   };
 
+  const imageUrl =
+    product.public_thumb_url ||
+    product.imageUrl ||
+    product.image ||
+    "https://via.placeholder.com/400x300";
+
   return (
-    <div className="group relative bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-xs hover:shadow-xl hover:border-slate-300 transition-all duration-300 flex flex-col justify-between h-[420px] sm:h-[460px] lg:h-[480px]">
+    <div className="group relative bg-white border border-slate-200/90 rounded-xl md:rounded-2xl overflow-hidden shadow-xs hover:shadow-xl hover:border-slate-300 transition-all duration-300 flex flex-col justify-between h-[340px] sm:h-[400px] md:h-[440px] lg:h-[470px]">
       {/* 1. IMAGE CONTAINER */}
       <Link
         to={`/product/${product.id}`}
-        className="relative w-full h-[70%] lg:h-[75%] bg-slate-100/80 block shrink-0 overflow-hidden"
+        className="relative w-full h-[62%] sm:h-[66%] md:h-[70%] lg:h-[72%] bg-slate-100/80 block shrink-0 overflow-hidden"
       >
         <img
-          src={
-            product.public_thumb_url ||
-            product.imageUrl ||
-            product.image ||
-            "https://via.placeholder.com/400x300"
-          }
+          src={imageUrl}
           alt={product.title}
           loading="lazy"
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
         />
 
         {/* Category Badge Overlay */}
-        <span className="absolute bottom-2.5 left-2.5 bg-slate-900/80 backdrop-blur-md text-[10px] font-semibold px-2 py-0.5 rounded-md text-white shadow-xs z-10 capitalize">
+        <span className="absolute bottom-2 left-2 md:bottom-2.5 md:left-2.5 bg-slate-900/85 backdrop-blur-md text-[9px] sm:text-[10px] font-semibold px-1.5 sm:px-2 py-0.5 rounded-md text-white shadow-xs z-10 capitalize tracking-wide">
           {product.category || "Digital Asset"}
         </span>
       </Link>
 
       {/* 2. DETAILS SECTION */}
-      <div className="h-[30%] lg:h-[25%] p-3 sm:p-3.5 flex flex-col justify-between shrink-0 bg-white">
+      <div className="h-[38%] sm:h-[34%] md:h-[30%] lg:h-[28%] p-2.5 sm:p-3 md:p-3.5 flex flex-col justify-between shrink-0 bg-white">
         <div>
           {/* Title */}
           <Link to={`/product/${product.id}`} className="no-underline block">
@@ -110,7 +111,7 @@ export default function ProductCard({ product, onAddToCart }) {
           </Link>
 
           {/* Ratings & Sales */}
-          <div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-slate-500">
+          <div className="flex items-center gap-1 sm:gap-1.5 mt-0.5 sm:mt-1 text-[10px] sm:text-[11px] text-slate-500">
             <div className="flex items-center gap-0.5 text-amber-500">
               <Star
                 size={12}
@@ -121,27 +122,27 @@ export default function ProductCard({ product, onAddToCart }) {
               </span>
             </div>
             <span>({ratingCount.toLocaleString()})</span>
-            <span>•</span>
-            <span className="font-medium text-slate-600 truncate">
+            <span className="hidden xs:inline">•</span>
+            <span className="hidden xs:inline font-medium text-slate-600 truncate">
               {salesCount.toLocaleString()} sold
             </span>
           </div>
         </div>
 
         {/* Pricing & Add to Cart Action */}
-        <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
-          <div className="flex items-baseline gap-1">
-            <span className="text-sm sm:text-base font-extrabold text-slate-900">
+        <div className="pt-1.5 sm:pt-2 border-t border-slate-100 flex items-center justify-between gap-1.5 sm:gap-2">
+          <div className="flex items-baseline gap-1 min-w-0">
+            <span className="text-xs sm:text-sm md:text-base font-extrabold text-slate-900 truncate">
               {formattedPrice}
             </span>
-            <span className="text-[10px] sm:text-[11px] text-slate-400 line-through">
+            <span className="hidden sm:inline text-[10px] md:text-[11px] text-slate-400 line-through truncate">
               {formattedOriginalPrice}
             </span>
           </div>
 
           <button
             onClick={handleAddToCart}
-            className={`py-1.5 px-3 rounded-xl font-semibold text-xs transition-all duration-200 cursor-pointer flex items-center gap-1.5 shrink-0 ${
+            className={`py-1 sm:py-1.5 px-2 sm:px-3 rounded-lg sm:rounded-xl font-semibold text-[11px] sm:text-xs transition-all duration-200 cursor-pointer flex items-center gap-1 shrink-0 ${
               isAdded
                 ? "bg-emerald-600 text-white"
                 : "bg-slate-900 hover:bg-indigo-600 text-white"
@@ -149,13 +150,14 @@ export default function ProductCard({ product, onAddToCart }) {
           >
             {isAdded ? (
               <>
-                <Check size={14} />
-                <span>Added!</span>
+                <Check size={13} className="shrink-0" />
+                <span className="hidden sm:inline">Added!</span>
               </>
             ) : (
               <>
-                <ShoppingCart size={14} />
-                <span>Add to Cart</span>
+                <ShoppingCart size={13} className="shrink-0" />
+                <span className="hidden sm:inline">Add to Cart</span>
+                <span className="sm:hidden">Add</span>
               </>
             )}
           </button>
