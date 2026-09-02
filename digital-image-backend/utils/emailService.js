@@ -38,15 +38,15 @@ async function sendOrderConfirmationEmail({
     process.env.CLIENT_URL || process.env.FRONTEND_URL || "https://pegty.com";
 
   const mailOptions = {
-    from: process.env.FROM_EMAIL || `"Pegty Marketplace" <${cleanSmtpUser}>`,
+    from: process.env.FROM_EMAIL || `"Pegty" <${cleanSmtpUser}>`,
     to: cleanCustomerEmail,
     subject: `Order Confirmation #${orderId} - Your Pegty Verified Buyer Details`,
     html: `
       <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; color: #0f172a;">
         
         <div style="background-color: #4f46e5; padding: 32px 24px; text-align: center;">
-          <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Thank You for Your Order!</h1>
-          <p style="color: #c7d2fe; margin-top: 8px; font-size: 14px;">Your digital assets are ready for download.</p>
+          <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Thank You for Your Purchase</h1>
+          <p style="color: #c7d2fe; margin-top: 8px; font-size: 14px;">Your digital asset is ready for download.</p>
         </div>
 
         <div style="padding: 28px 24px;">
@@ -89,7 +89,7 @@ async function sendOrderConfirmationEmail({
 
           <div style="text-align: center; margin-top: 28px;">
             <a href="${siteUrl}" style="background-color: #4f46e5; color: #ffffff; padding: 14px 28px; border-radius: 10px; text-decoration: none; font-weight: 700; font-size: 14px; display: inline-block;">
-              Return to Pegty Marketplace
+              Return to Pegty
             </a>
           </div>
         </div>
