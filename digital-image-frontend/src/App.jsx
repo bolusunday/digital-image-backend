@@ -100,15 +100,15 @@ function Home({ products, isLoading, onAddToCart }) {
         </span>
       </div>
 
-      {/* Grid State */}
+      {/* Grid State - Etsy Style Grid (Max 4 columns on desktop) */}
       {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-6 w-full">
-          {[...Array(12)].map((_, i) => (
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 w-full">
+          {[...Array(8)].map((_, i) => (
             <div
               key={i}
               className="bg-white border border-slate-200 rounded-2xl p-4 animate-pulse flex flex-col gap-4 min-h-[320px]"
             >
-              <div className="aspect-[4/3] bg-slate-200 rounded-xl w-full" />
+              <div className="h-52 sm:h-60 lg:h-72 bg-slate-200 rounded-xl w-full" />
               <div className="h-4 bg-slate-200 rounded-md w-3/4" />
               <div className="h-3 bg-slate-100 rounded-md w-1/2" />
               <div className="mt-auto h-10 bg-slate-200 rounded-xl w-full" />
@@ -135,7 +135,7 @@ function Home({ products, isLoading, onAddToCart }) {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-6 w-full">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 w-full">
           {displayedProducts.map((product, idx) => (
             <ProductCard
               key={product.id ?? idx}

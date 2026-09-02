@@ -77,10 +77,10 @@ export default function ProductCard({ product, onAddToCart }) {
 
   return (
     <div className="group relative bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-xs hover:shadow-xl hover:border-slate-300 transition-all duration-300 flex flex-col justify-between h-full">
-      {/* Thumbnail Container */}
+      {/* 75% Height Image Container for Desktop */}
       <Link
         to={`/product/${product.id}`}
-        className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100/80 flex items-center justify-center p-3 block shrink-0"
+        className="relative w-full h-52 sm:h-60 lg:h-72 shrink-0 bg-slate-100/80 flex items-center justify-center p-3.5 block overflow-hidden"
       >
         <img
           src={
@@ -91,7 +91,7 @@ export default function ProductCard({ product, onAddToCart }) {
           }
           alt={product.title}
           loading="lazy"
-          /* Changed to object-contain so 100% of the image is shown without cropping */
+          /* 100% full image file fits inside container without cropping */
           className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500 ease-out"
         />
 
@@ -102,7 +102,7 @@ export default function ProductCard({ product, onAddToCart }) {
             e.stopPropagation();
             setIsFavorite(!isFavorite);
           }}
-          className="absolute top-2.5 right-2.5 p-2.5 sm:p-2 bg-white/90 hover:bg-white backdrop-blur-md rounded-full shadow-md text-slate-600 hover:text-rose-500 active:scale-90 transition-all duration-200 cursor-pointer z-10"
+          className="absolute top-2.5 right-2.5 p-2 sm:p-2.5 bg-white/90 hover:bg-white backdrop-blur-md rounded-full shadow-md text-slate-600 hover:text-rose-500 active:scale-90 transition-all duration-200 cursor-pointer z-10"
           aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
         >
           <Heart
@@ -113,27 +113,27 @@ export default function ProductCard({ product, onAddToCart }) {
           />
         </button>
 
-        {/* Category Tag Overlay */}
-        <span className="absolute bottom-2.5 left-2.5 bg-slate-900/80 backdrop-blur-md text-[10px] sm:text-[11px] font-semibold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md text-white shadow-xs z-10 capitalize">
+        {/* Category Badge Overlay */}
+        <span className="absolute bottom-2.5 left-2.5 bg-slate-900/80 backdrop-blur-md text-[10px] font-semibold px-2 py-0.5 rounded-md text-white shadow-xs z-10 capitalize">
           {product.category || "Digital Asset"}
         </span>
       </Link>
 
-      {/* Details Section */}
-      <div className="p-3.5 sm:p-4 flex flex-col flex-grow justify-between">
+      {/* Compact 25% Bottom Section */}
+      <div className="p-3 sm:p-3.5 flex flex-col flex-grow justify-between gap-2">
         <div>
           {/* Title */}
           <Link to={`/product/${product.id}`} className="no-underline block">
-            <h3 className="text-[13px] sm:text-sm font-semibold text-slate-900 line-clamp-2 mb-1.5 group-hover:text-indigo-600 transition-colors leading-snug">
+            <h3 className="text-xs sm:text-sm font-semibold text-slate-900 line-clamp-1 group-hover:text-indigo-600 transition-colors leading-snug">
               {product.title}
             </h3>
           </Link>
 
-          {/* Dynamic Ratings & Sales */}
-          <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 mb-3 text-[11px] sm:text-xs text-slate-500">
-            <div className="flex items-center gap-1 text-amber-500">
+          {/* Ratings & Sales (Etsy Style) */}
+          <div className="flex items-center gap-1.5 mt-1 text-[11px] text-slate-500">
+            <div className="flex items-center gap-0.5 text-amber-500">
               <Star
-                size={13}
+                size={12}
                 className="fill-amber-400 text-amber-400 shrink-0"
               />
               <span className="font-bold text-slate-900">
@@ -141,46 +141,41 @@ export default function ProductCard({ product, onAddToCart }) {
               </span>
             </div>
             <span>({ratingCount.toLocaleString()})</span>
-            <span className="hidden sm:inline">•</span>
-            <span className="font-medium text-slate-600 w-full sm:w-auto mt-0.5 sm:mt-0">
+            <span>•</span>
+            <span className="font-medium text-slate-600 truncate">
               {salesCount.toLocaleString()} sold
             </span>
           </div>
         </div>
 
-        {/* Pricing & Action */}
-        <div className="pt-2 border-t border-slate-100/80 flex flex-col gap-2.5">
-          {/* Price Badges */}
-          <div className="flex items-baseline flex-wrap gap-1.5 sm:gap-2">
-            <span className="text-base sm:text-lg font-extrabold text-slate-900">
+        {/* Pricing & Add Button */}
+        <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+          <div className="flex items-baseline gap-1">
+            <span className="text-sm sm:text-base font-extrabold text-slate-900">
               {formattedPrice}
             </span>
-            <span className="text-[11px] sm:text-xs text-slate-400 line-through">
+            <span className="text-[10px] sm:text-[11px] text-slate-400 line-through">
               {formattedOriginalPrice}
-            </span>
-            <span className="text-[10px] sm:text-[11px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded ml-auto sm:ml-0">
-              50% OFF
             </span>
           </div>
 
-          {/* Add to Cart Button */}
           <button
             onClick={handleAddToCart}
-            className={`w-full py-2.5 px-3 rounded-xl font-semibold text-xs transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 shadow-xs active:scale-[0.98] ${
+            className={`py-1.5 px-3 rounded-xl font-semibold text-xs transition-all duration-200 cursor-pointer flex items-center gap-1.5 shrink-0 ${
               isAdded
                 ? "bg-emerald-600 text-white"
-                : "bg-slate-900 hover:bg-indigo-600 text-white group-hover:shadow-md"
+                : "bg-slate-900 hover:bg-indigo-600 text-white"
             }`}
           >
             {isAdded ? (
               <>
-                <Check size={15} />
-                Added!
+                <Check size={14} />
+                <span>Added</span>
               </>
             ) : (
               <>
-                <ShoppingCart size={15} />
-                Add to Cart
+                <ShoppingCart size={14} />
+                <span>Add</span>
               </>
             )}
           </button>
