@@ -54,12 +54,12 @@ export default function ProductCard({ product, onAddToCart }) {
   const priceInDollars = rawPrice > 500 ? rawPrice / 100 : rawPrice;
   const originalPriceInDollars = priceInDollars * 2;
 
-  const formattedPrice = priceInDollars.toLocaleString("en-US", {
+  const formattedPrice = Number(priceInDollars).toLocaleString("en-US", {
     style: "currency",
     currency: "USD",
   });
 
-  const formattedOriginalPrice = originalPriceInDollars.toLocaleString(
+  const formattedOriginalPrice = Number(originalPriceInDollars).toLocaleString(
     "en-US",
     {
       style: "currency",
@@ -77,10 +77,10 @@ export default function ProductCard({ product, onAddToCart }) {
 
   return (
     <div className="group relative bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-xs hover:shadow-xl hover:border-slate-300 transition-all duration-300 flex flex-col justify-between h-full">
-      {/* Thumbnail Container */}
+      {/* Thumbnail Container (Removed p-3 padding so image covers full container) */}
       <Link
         to={`/product/${product.id}`}
-        className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100/80 flex items-center justify-center p-3 block shrink-0"
+        className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100/80 block shrink-0"
       >
         <img
           src={
@@ -91,7 +91,8 @@ export default function ProductCard({ product, onAddToCart }) {
           }
           alt={product.title}
           loading="lazy"
-          className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500 ease-out"
+          /* Changed object-contain to object-cover and object-center */
+          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
         />
 
         {/* Favorite Button Overlay */}
@@ -152,7 +153,7 @@ export default function ProductCard({ product, onAddToCart }) {
           {/* Price Badges */}
           <div className="flex items-baseline flex-wrap gap-1.5 sm:gap-2">
             <span className="text-base sm:text-lg font-extrabold text-slate-900">
-              ${formattedPrice}
+              {formattedPrice}
             </span>
             <span className="text-[11px] sm:text-xs text-slate-400 line-through">
               {formattedOriginalPrice}
