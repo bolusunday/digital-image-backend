@@ -37,8 +37,18 @@ async function sendOrderConfirmationEmail({
   const siteUrl =
     process.env.CLIENT_URL || process.env.FRONTEND_URL || "https://pegty.com";
 
+  // Extracts pure email address if process.env.FROM_EMAIL contains brackets or names
+  const rawFromEmail = process.env.FROM_EMAIL || cleanSmtpUser;
+  const cleanFromAddress = rawFromEmail.includes("<")
+    ? rawFromEmail.match(/<([^>]+)>/)?.[1] || cleanSmtpUser
+    : rawFromEmail.trim();
+
   const mailOptions = {
-    from: process.env.FROM_EMAIL || `"Pegty" <${cleanSmtpUser}>`,
+    // Passing object syntax ensures RFC 5322 compliance and forces "Pegty" in inbox list views
+    from: {
+      name: process.env.FROM_NAME || "Pegty",
+      address: cleanFromAddress,
+    },
     to: cleanCustomerEmail,
     subject: `Order Confirmation #${orderId} - Your Pegty Verified Buyer Details`,
     html: `
