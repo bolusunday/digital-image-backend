@@ -19,7 +19,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import LoginPage from "./pages/LoginPage";
 import { API_URL } from "./config";
 
-// ✅ Helper component that resets scroll position on navigation
+// Helper component that resets scroll position on navigation
 function ScrollToTop() {
   const { pathname, search } = useLocation();
 
@@ -100,9 +100,9 @@ function Home({ products, isLoading, onAddToCart }) {
         </span>
       </div>
 
-      {/* Grid State - Etsy Style Grid (Max 4 columns on desktop) */}
+      {/* Grid State - 1 Column Mobile, 2 Columns Tablet, 3/4 Columns Desktop */}
       {isLoading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 w-full">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 w-full">
           {[...Array(8)].map((_, i) => (
             <div
               key={i}
@@ -135,7 +135,7 @@ function Home({ products, isLoading, onAddToCart }) {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 w-full">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 w-full">
           {displayedProducts.map((product, idx) => (
             <ProductCard
               key={product.id ?? idx}
