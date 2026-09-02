@@ -47,7 +47,7 @@ async function sendOrderConfirmationEmail({
     // Passing object syntax ensures RFC 5322 compliance and forces "Pegty" in inbox list views
     from: {
       name: process.env.FROM_NAME || "Pegty",
-      address: cleanFromAddress,
+      address: cleanSmtpUsers,
     },
     to: cleanCustomerEmail,
     subject: `Order Confirmation #${orderId} - Your Pegty Verified Buyer Details`,
