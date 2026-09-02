@@ -16,10 +16,18 @@ import {
 
 import { API_URL } from "../config";
 
-export default function SuccessPage() {
+export default function SuccessPage({ onClearCart }) {
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get("session_id");
-  const { clearCart } = useCart();
+
+  // Safely attempt Context extraction if CartContext exists
+  let clearCart;
+  try {
+    const context = useCart();
+    clearCart = context?.clearCart;
+  } catch (err) {
+    clearCart = null;
+  }
 
   const [files, setFiles] = useState([]);
   const [orderInfo, setOrderInfo] = useState({ orderId: null, email: null });
@@ -64,10 +72,25 @@ export default function SuccessPage() {
     if (fetchedSessionId.current === sessionId) return;
     fetchedSessionId.current = sessionId;
 
-    // Clear cart inside guard to ensure single execution
+    // 1. Clear state via App.jsx prop handler if provided
+    if (typeof onClearCart === "function") {
+      onClearCart();
+    }
+
+    // 2. Clear cart state in Context API if present
     if (typeof clearCart === "function") {
       clearCart();
     }
+
+    // 3. Forcefully remove cart keys from browser storage
+    ["pegty_cart", "cart", "shopping_cart", "cartItems"].forEach((key) => {
+      localStorage.removeItem(key);
+      sessionStorage.removeItem(key);
+    });
+
+    // 4. Dispatch global events so App.jsx or Header cart badges sync instantly
+    window.dispatchEvent(new Event("storage"));
+    window.dispatchEvent(new Event("cartUpdated"));
 
     // Fetch verified download links and Order Metadata from Express backend
     fetch(`${API_URL}/api/payments/verify-payment?session_id=${sessionId}`)
@@ -101,7 +124,7 @@ export default function SuccessPage() {
         );
         setLoading(false);
       });
-  }, [sessionId, clearCart]);
+  }, [sessionId, clearCart, onClearCart]);
 
   return (
     <div className="min-h-[85vh] flex items-center justify-center px-4 py-12 relative overflow-hidden">

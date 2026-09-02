@@ -173,6 +173,26 @@ export default function App() {
     }
   }, [cart]);
 
+  // Listen for custom events and storage events to keep cart state in sync
+  useEffect(() => {
+    const syncCart = () => {
+      try {
+        const savedCart = localStorage.getItem("pegty_cart");
+        setCart(savedCart ? JSON.parse(savedCart) : []);
+      } catch (error) {
+        setCart([]);
+      }
+    };
+
+    window.addEventListener("storage", syncCart);
+    window.addEventListener("cartUpdated", syncCart);
+
+    return () => {
+      window.removeEventListener("storage", syncCart);
+      window.removeEventListener("cartUpdated", syncCart);
+    };
+  }, []);
+
   useEffect(() => {
     setIsLoading(true);
     fetch(`${API_URL}/api/products`)
@@ -193,6 +213,11 @@ export default function App() {
 
   const handleRemoveFromCart = (indexToRemove) => {
     setCart((prev) => prev.filter((_, index) => index !== indexToRemove));
+  };
+
+  const handleClearCart = () => {
+    setCart([]);
+    localStorage.removeItem("pegty_cart");
   };
 
   return (
@@ -240,7 +265,10 @@ export default function App() {
                 />
               }
             />
-            <Route path="/success" element={<SuccessPage />} />
+            <Route
+              path="/success"
+              element={<SuccessPage onClearCart={handleClearCart} />}
+            />
             <Route path="/login" element={<LoginPage />} />
 
             {/* Protected Routes */}
