@@ -77,10 +77,10 @@ export default function ProductCard({ product, onAddToCart }) {
 
   return (
     <div className="group relative bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-xs hover:shadow-xl hover:border-slate-300 transition-all duration-300 flex flex-col justify-between h-full">
-      {/* Thumbnail Container (Removed p-3 padding so image covers full container) */}
+      {/* Thumbnail Container */}
       <Link
         to={`/product/${product.id}`}
-        className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100/80 block shrink-0"
+        className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100/80 flex items-center justify-center p-3 block shrink-0"
       >
         <img
           src={
@@ -91,8 +91,8 @@ export default function ProductCard({ product, onAddToCart }) {
           }
           alt={product.title}
           loading="lazy"
-          /* Changed object-contain to object-cover and object-center */
-          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
+          /* Changed to object-contain so 100% of the image is shown without cropping */
+          className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500 ease-out"
         />
 
         {/* Favorite Button Overlay */}
