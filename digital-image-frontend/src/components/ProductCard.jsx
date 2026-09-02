@@ -76,11 +76,11 @@ export default function ProductCard({ product, onAddToCart }) {
   };
 
   return (
-    <div className="group relative bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-xs hover:shadow-xl hover:border-slate-300 transition-all duration-300 flex flex-col justify-between h-full">
-      {/* 75% Height Image Container for Desktop */}
+    <div className="group relative bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-xs hover:shadow-xl hover:border-slate-300 transition-all duration-300 flex flex-col justify-between h-[420px] sm:h-[460px] lg:h-[480px]">
+      {/* 1. IMAGE CONTAINER: Strictly set to 75% height of the card on desktop */}
       <Link
         to={`/product/${product.id}`}
-        className="relative w-full h-52 sm:h-60 lg:h-72 shrink-0 bg-slate-100/80 flex items-center justify-center p-3.5 block overflow-hidden"
+        className="relative w-full h-[70%] lg:h-[75%] bg-slate-100/80 flex items-center justify-center p-3.5 block shrink-0 overflow-hidden"
       >
         <img
           src={
@@ -91,7 +91,6 @@ export default function ProductCard({ product, onAddToCart }) {
           }
           alt={product.title}
           loading="lazy"
-          /* 100% full image file fits inside container without cropping */
           className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500 ease-out"
         />
 
@@ -119,8 +118,8 @@ export default function ProductCard({ product, onAddToCart }) {
         </span>
       </Link>
 
-      {/* Compact 25% Bottom Section */}
-      <div className="p-3 sm:p-3.5 flex flex-col flex-grow justify-between gap-2">
+      {/* 2. DETAILS SECTION: Remaining 25% height of the card */}
+      <div className="h-[30%] lg:h-[25%] p-3 sm:p-3.5 flex flex-col justify-between shrink-0 bg-white">
         <div>
           {/* Title */}
           <Link to={`/product/${product.id}`} className="no-underline block">
@@ -129,8 +128,8 @@ export default function ProductCard({ product, onAddToCart }) {
             </h3>
           </Link>
 
-          {/* Ratings & Sales (Etsy Style) */}
-          <div className="flex items-center gap-1.5 mt-1 text-[11px] text-slate-500">
+          {/* Ratings & Sales */}
+          <div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-slate-500">
             <div className="flex items-center gap-0.5 text-amber-500">
               <Star
                 size={12}
@@ -148,7 +147,7 @@ export default function ProductCard({ product, onAddToCart }) {
           </div>
         </div>
 
-        {/* Pricing & Add Button */}
+        {/* Pricing & Add to Cart Action */}
         <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
           <div className="flex items-baseline gap-1">
             <span className="text-sm sm:text-base font-extrabold text-slate-900">
@@ -170,12 +169,12 @@ export default function ProductCard({ product, onAddToCart }) {
             {isAdded ? (
               <>
                 <Check size={14} />
-                <span>Added</span>
+                <span>Added!</span>
               </>
             ) : (
               <>
                 <ShoppingCart size={14} />
-                <span>Add</span>
+                <span>Add to Cart</span>
               </>
             )}
           </button>
