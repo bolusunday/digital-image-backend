@@ -81,11 +81,11 @@ export default function ProductCard({ product, onAddToCart }) {
     "https://via.placeholder.com/400x300";
 
   return (
-    <div className="group relative w-full bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-xs hover:shadow-xl hover:border-slate-300 transition-all duration-300 flex flex-col justify-between h-[400px] sm:h-[430px] md:h-[450px] lg:h-[480px]">
-      {/* 1. IMAGE CONTAINER */}
+    <div className="group relative w-full bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-xs hover:shadow-xl hover:border-slate-300 transition-all duration-300 flex flex-col justify-between h-full">
+      {/* 1. IMAGE CONTAINER WITH RESPONSIVE ASPECT RATIO */}
       <Link
         to={`/product/${product.id}`}
-        className="relative w-full h-[65%] sm:h-[68%] md:h-[70%] lg:h-[73%] bg-slate-100/80 block shrink-0 overflow-hidden"
+        className="relative w-full aspect-[4/3] bg-slate-100 block shrink-0 overflow-hidden"
       >
         <img
           src={imageUrl}
@@ -101,7 +101,7 @@ export default function ProductCard({ product, onAddToCart }) {
       </Link>
 
       {/* 2. DETAILS SECTION */}
-      <div className="h-[35%] sm:h-[32%] md:h-[30%] lg:h-[27%] p-3 sm:p-3.5 md:p-4 flex flex-col justify-between shrink-0 bg-white">
+      <div className="p-3.5 sm:p-4 flex flex-col justify-between flex-1 bg-white">
         <div>
           {/* Title */}
           <Link to={`/product/${product.id}`} className="no-underline block">
@@ -130,7 +130,7 @@ export default function ProductCard({ product, onAddToCart }) {
         </div>
 
         {/* Pricing & Add to Cart Action */}
-        <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+        <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
           <div className="flex items-baseline gap-1.5 min-w-0">
             <span className="text-base sm:text-lg font-black text-slate-900 truncate">
               {formattedPrice}
