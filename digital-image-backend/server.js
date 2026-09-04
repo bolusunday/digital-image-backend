@@ -56,9 +56,9 @@ app.use(
   }),
 );
 
-// --------------- Stripe Webhook Listener (MUST BE BEFORE express.json) ---------------
+// --------------- Stripe Webhook Listener (Supports both endpoint paths) ---------------
 app.post(
-  "/api/webhook",
+  ["/api/stripe/webhook", "/api/webhook"],
   express.raw({ type: "application/json" }),
   async (req, res) => {
     if (!stripe) {
