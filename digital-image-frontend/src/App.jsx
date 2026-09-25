@@ -39,11 +39,13 @@ function Home({ products, isLoading, onAddToCart }) {
 
   // Map slugs to proper category display names
   const categoryNames = {
-    sport: "Sport Assets",
-    cartoon: "Cartoon & Characters",
-    africana: "Africana Art",
-    medieval: "Medieval Packs",
-    homedecor: "Home Decor",
+    sport: "Cottage Core",
+    cartoon: "Dark Cottage Core",
+    africana: "Rustik & Gothic",
+    medieval: "Vintage Photography",
+    homedecor: "Modern & Classic Wall Arts",
+    winterandchristmas: "Winter & Christmas,",
+    blackarts: "Black Arts",
     ebook: "E-Books",
   };
 
@@ -89,8 +91,10 @@ function Home({ products, isLoading, onAddToCart }) {
           {!currentCategory && !searchQuery && (
             <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium leading-relaxed">
               Discover our high-quality, unique and ready-to-use images in
-              categories of Sport, Cartoon, Africana and Medieval. We also have
-              in stock, collection of highly informative E-books
+              categories of Cottage Core, Dark Cottage Core, Rustik & Gothic,
+              Vintage Photography, Winter & Christmas, Modern & Classic Wall
+              Arts and Black Arts. We also have in stock, collection of highly
+              informative E-books
             </p>
           )}
         </div>
