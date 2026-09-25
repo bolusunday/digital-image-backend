@@ -39,11 +39,11 @@ function Home({ products, isLoading, onAddToCart }) {
 
   // Map slugs to proper category display names
   const categoryNames = {
-    sport: "Cottage Core",
-    cartoon: "Dark Cottage Core",
-    africana: "Rustik & Gothic",
-    medieval: "Vintage Photography",
-    homedecor: "Modern & Classic Wall Arts",
+    cottagecore: "Cottage Core",
+    darkcottagecore: "Dark Cottage Core",
+    rustikandgothic: "Rustik & Gothic",
+    vintagephotography: "Vintage Photography",
+    moderandclassicwallarts: "Modern & Classic Wall Arts",
     winterandchristmas: "Winter & Christmas,",
     blackarts: "Black Arts",
     ebook: "E-Books",
