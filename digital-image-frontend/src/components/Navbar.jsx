@@ -18,11 +18,13 @@ export default function Navbar({ cartCount = 0 }) {
   const location = useLocation();
 
   const categories = [
-    { name: "Sport Assets", slug: "sport" },
-    { name: "Cartoon & Characters", slug: "cartoon" },
-    { name: "Africana Art", slug: "africana" },
-    { name: "Medieval Packs", slug: "medieval" },
-    { name: "Home Decor", slug: "homedecor" },
+    { name: "Cottage Core", slug: "cottagecore" },
+    { name: "Dark Cottage Core", slug: "darkcottagecore" },
+    { name: "Rustik & Gothic", slug: "rustikandgothic" },
+    { name: "Vintage Photography", slug: "vintagephotography" },
+    { name: "Modern & Classic Wall Arts", slug: "modernandclassicwallarts" },
+    { name: "Seasonal", slug: "seasonal" },
+    { name: "Black Arts", slug: "blackarts" },
     { name: "E-Books", slug: "ebook" },
   ];
 

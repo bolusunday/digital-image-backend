@@ -43,8 +43,8 @@ function Home({ products, isLoading, onAddToCart }) {
     darkcottagecore: "Dark Cottage Core",
     rustikandgothic: "Rustik & Gothic",
     vintagephotography: "Vintage Photography",
-    moderandclassicwallarts: "Modern & Classic Wall Arts",
-    winterandchristmas: "Winter & Christmas,",
+    modernandclassicwallarts: "Modern & Classic Wall Arts",
+    seasonal: "Seasonal",
     blackarts: "Black Arts",
     ebook: "E-Books",
   };

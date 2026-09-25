@@ -18,12 +18,14 @@ import {
 import { API_URL } from "../config";
 
 const CATEGORY_OPTIONS = [
-  { name: "Sport Assets", value: "sport" },
-  { name: "Cartoon & Characters", value: "cartoon" },
-  { name: "Africana Art", value: "africana" },
-  { name: "Medieval Packs", value: "medieval" },
-  { name: "Home Decor", value: "homedecor" },
-  { name: "EBooks", value: "ebook" },
+  { name: "Cottage Core", value: "cottagecore" },
+  { name: "Dark Cottage Core", value: "darkcottagecore" },
+  { name: "Rustik & Gothic", value: "rustikandgothic" },
+  { name: "Vintage Photography", value: "vintagephotography" },
+  { name: "Modern & Classic Wall Arts", value: "modernandclassicwallarts" },
+  { name: "Seasonal", value: "seasonal" },
+  { name: "Black Arts", value: "blackarts" },
+  { name: "E-Books", value: "ebook" },
 ];
 
 // ==========================================
