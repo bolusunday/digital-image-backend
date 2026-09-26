@@ -1,5 +1,5 @@
 // src/pages/ProductDetailPage.jsx
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   ShoppingBag,
@@ -249,6 +249,7 @@ export default function ProductDetailPage({ onAddToCart }) {
   const [product, setProduct] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedImage, setSelectedImage] = useState(null);
 
   const reviewsRef = useRef(null);
 
@@ -271,6 +272,31 @@ export default function ProductDetailPage({ onAddToCart }) {
       },
     );
   }, [id]);
+
+  // Consolidate main thumbnail and gallery images into a single unique array
+  const galleryImages = useMemo(() => {
+    if (!product) return [];
+    const images = [];
+
+    if (product.public_thumb_url) images.push(product.public_thumb_url);
+    if (product.imageUrl && !images.includes(product.imageUrl)) {
+      images.push(product.imageUrl);
+    }
+    if (Array.isArray(product.images)) {
+      product.images.forEach((img) => {
+        if (img && !images.includes(img)) images.push(img);
+      });
+    }
+
+    return images.length > 0 ? images : ["https://via.placeholder.com/600x450"];
+  }, [product]);
+
+  // Set default selected image on product load
+  useEffect(() => {
+    if (galleryImages.length > 0) {
+      setSelectedImage(galleryImages[0]);
+    }
+  }, [galleryImages]);
 
   if (loading) {
     return (
@@ -312,6 +338,8 @@ export default function ProductDetailPage({ onAddToCart }) {
     (rev) => rev && (rev.id || rev.comment || rev.user_name),
   );
 
+  const activeImageSrc = selectedImage || galleryImages[0];
+
   return (
     <div className="min-h-screen bg-slate-50/60 py-4 sm:py-8 px-3 sm:px-6 lg:px-8 pb-24 md:pb-8">
       <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
@@ -326,18 +354,39 @@ export default function ProductDetailPage({ onAddToCart }) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-10 bg-white p-4 sm:p-8 lg:p-10 rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-xs">
-          <div className="md:col-span-1 lg:col-span-7">
+          {/* Main Image & Gallery Strip */}
+          <div className="md:col-span-1 lg:col-span-7 space-y-3">
             <div className="aspect-square sm:aspect-[4/3] bg-slate-100/80 rounded-xl sm:rounded-2xl overflow-hidden border border-slate-200/80 shadow-inner flex items-center justify-center p-3 sm:p-4">
               <img
-                src={
-                  product.public_thumb_url ||
-                  product.imageUrl ||
-                  "https://via.placeholder.com/600x450"
-                }
+                src={activeImageSrc}
                 alt={product.title}
-                className="max-w-full max-h-full w-auto h-auto object-contain transition-transform duration-300 hover:scale-[1.02]"
+                className="max-w-full max-h-full w-auto h-auto object-contain transition-all duration-300 hover:scale-[1.02]"
               />
             </div>
+
+            {/* Gallery Thumbnails Selection */}
+            {galleryImages.length > 1 && (
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-1 scrollbar-none">
+                {galleryImages.map((img, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setSelectedImage(img)}
+                    className={`relative flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border-2 p-1 bg-slate-50 transition-all cursor-pointer ${
+                      activeImageSrc === img
+                        ? "border-indigo-600 ring-2 ring-indigo-500/20 opacity-100"
+                        : "border-slate-200 opacity-60 hover:opacity-100"
+                    }`}
+                  >
+                    <img
+                      src={img}
+                      alt={`${product.title} gallery thumbnail ${idx + 1}`}
+                      className="w-full h-full object-contain"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="md:col-span-1 lg:col-span-5 flex flex-col justify-between">

@@ -21,8 +21,10 @@ const upload = multer({
       cb(null, { fieldName: file.fieldname });
     },
     key: (req, file, cb) => {
-      const folder =
-        file.fieldname === "thumbnail" ? "thumbnails" : "originals";
+      let folder = "originals";
+      if (file.fieldname === "thumbnail") folder = "thumbnails";
+      if (file.fieldname === "gallery") folder = "gallery";
+
       const cleanFileName = file.originalname.replace(/\s+/g, "-");
       const uniqueName = `${folder}/${Date.now()}-${Math.round(
         Math.random() * 1e9,
@@ -37,6 +39,7 @@ const uploadFields = (req, res, next) => {
   const multerHandler = upload.fields([
     { name: "thumbnail", maxCount: 1 },
     { name: "original_file", maxCount: 1 },
+    { name: "gallery", maxCount: 10 }, // Allowed multi-image gallery files
   ]);
 
   multerHandler(req, res, (err) => {
@@ -57,7 +60,7 @@ const uploadFields = (req, res, next) => {
 router.get("/", async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT id, title, description, price, category, public_thumb_url, rating_average, rating_count, sales_count, created_at FROM products ORDER BY id DESC",
+      "SELECT id, title, description, price, category, public_thumb_url, images, rating_average, rating_count, sales_count, created_at FROM products ORDER BY id DESC",
     );
     res.json(result.rows);
   } catch (err) {
@@ -104,6 +107,7 @@ router.post("/upload", verifyToken, uploadFields, async (req, res) => {
 
     const thumbnailFile = req.files?.["thumbnail"]?.[0];
     const originalFile = req.files?.["original_file"]?.[0];
+    const galleryFiles = req.files?.["gallery"] || [];
 
     if (!thumbnailFile || !originalFile) {
       return res.status(400).json({
@@ -114,6 +118,10 @@ router.post("/upload", verifyToken, uploadFields, async (req, res) => {
     const publicThumbUrl = thumbnailFile.location;
     const privateFileKey = originalFile.key;
 
+    // Collect extra gallery S3 URLs and put main thumbnail first
+    const galleryUrls = galleryFiles.map((file) => file.location);
+    const imagesList = [publicThumbUrl, ...galleryUrls];
+
     const priceInCents = Math.round(parseFloat(price) * 100);
 
     if (isNaN(priceInCents)) {
@@ -121,8 +129,8 @@ router.post("/upload", verifyToken, uploadFields, async (req, res) => {
     }
 
     const insertQuery = `
-      INSERT INTO products (title, description, price, public_thumb_url, private_file_key, category)
-      VALUES ($1, $2, $3, $4, $5, $6)
+      INSERT INTO products (title, description, price, public_thumb_url, private_file_key, category, images)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING *;
     `;
     const values = [
@@ -132,6 +140,7 @@ router.post("/upload", verifyToken, uploadFields, async (req, res) => {
       publicThumbUrl,
       privateFileKey,
       category || "General",
+      imagesList,
     ];
 
     const newProduct = await pool.query(insertQuery, values);
@@ -154,7 +163,7 @@ router.delete("/:id", verifyToken, async (req, res) => {
     const { id } = req.params;
 
     const productResult = await pool.query(
-      "SELECT public_thumb_url, private_file_key FROM products WHERE id = $1",
+      "SELECT public_thumb_url, private_file_key, images FROM products WHERE id = $1",
       [id],
     );
 
@@ -162,15 +171,19 @@ router.delete("/:id", verifyToken, async (req, res) => {
       return res.status(404).json({ error: "Product not found." });
     }
 
-    const { public_thumb_url, private_file_key } = productResult.rows[0];
-
-    let thumbKey = null;
-    if (public_thumb_url && public_thumb_url.includes(".amazonaws.com/")) {
-      thumbKey = public_thumb_url.split(".amazonaws.com/")[1];
-    }
+    const { public_thumb_url, private_file_key, images } =
+      productResult.rows[0];
 
     const bucketName = process.env.AWS_BUCKET_NAME;
     const deletePromises = [];
+
+    // Helper to extract S3 key from full public URL
+    const extractS3Key = (url) => {
+      if (url && url.includes(".amazonaws.com/")) {
+        return url.split(".amazonaws.com/")[1];
+      }
+      return null;
+    };
 
     if (private_file_key) {
       deletePromises.push(
@@ -183,12 +196,28 @@ router.delete("/:id", verifyToken, async (req, res) => {
       );
     }
 
+    // Delete thumbnail
+    const thumbKey = extractS3Key(public_thumb_url);
     if (thumbKey) {
       deletePromises.push(
         s3Client.send(
           new DeleteObjectCommand({ Bucket: bucketName, Key: thumbKey }),
         ),
       );
+    }
+
+    // Delete gallery images if stored in S3
+    if (Array.isArray(images)) {
+      images.forEach((imgUrl) => {
+        const key = extractS3Key(imgUrl);
+        if (key && key !== thumbKey) {
+          deletePromises.push(
+            s3Client.send(
+              new DeleteObjectCommand({ Bucket: bucketName, Key: key }),
+            ),
+          );
+        }
+      });
     }
 
     await Promise.allSettled(deletePromises);

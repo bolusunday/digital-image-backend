@@ -12,6 +12,7 @@ export default function EditProductModal({
     description: "",
     price: "",
     public_thumb_url: "",
+    images: [],
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -24,6 +25,7 @@ export default function EditProductModal({
         description: product.description || "",
         price: product.price || 0, // stored in cents
         public_thumb_url: product.public_thumb_url || "",
+        images: Array.isArray(product.images) ? product.images : [],
       });
       setError("");
     }
@@ -36,14 +38,36 @@ export default function EditProductModal({
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Gallery URL handlers
+  const handleGalleryChange = (index, value) => {
+    const updated = [...formData.images];
+    updated[index] = value;
+    setFormData((prev) => ({ ...prev, images: updated }));
+  };
+
+  const addGalleryField = () => {
+    setFormData((prev) => ({ ...prev, images: [...prev.images, ""] }));
+  };
+
+  const removeGalleryField = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index),
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
+    // Filter out empty URL strings
+    const cleanGallery = formData.images.filter((url) => url.trim() !== "");
+
     try {
+      const baseUrl = process.env.REACT_APP_API_URL || "";
       const response = await fetch(
-        `http://localhost:5000/api/admin/products/${product.id}`,
+        `${baseUrl}/api/admin/products/${product.id}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -52,6 +76,7 @@ export default function EditProductModal({
             description: formData.description,
             price: Number(formData.price), // ensure numeric format
             public_thumb_url: formData.public_thumb_url,
+            images: cleanGallery,
           }),
         },
       );
@@ -59,7 +84,7 @@ export default function EditProductModal({
       const data = await response.json();
 
       if (response.ok) {
-        onProductUpdated(data.product); // Notify parent component to update UI state
+        onProductUpdated(data.product); // Notify parent component
         onClose(); // Close modal
       } else {
         setError(data.error || "Failed to update product.");
@@ -73,8 +98,8 @@ export default function EditProductModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
-      <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-gray-200 relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-gray-200 relative max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-bold text-gray-900">Edit Product</h2>
           <button
@@ -123,10 +148,10 @@ export default function EditProductModal({
             />
           </div>
 
-          {/* Image URL */}
+          {/* Thumbnail Image URL */}
           <div>
             <label className="block text-xs font-bold text-gray-700 mb-1">
-              Thumbnail Image URL
+              Main Thumbnail Image URL
             </label>
             <input
               type="text"
@@ -135,6 +160,42 @@ export default function EditProductModal({
               onChange={handleChange}
               className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
             />
+          </div>
+
+          {/* Gallery Image URLs */}
+          <div>
+            <div className="flex justify-between items-center mb-1">
+              <label className="block text-xs font-bold text-gray-700">
+                Gallery Image URLs
+              </label>
+              <button
+                type="button"
+                onClick={addGalleryField}
+                className="text-xs font-bold text-orange-600 hover:text-orange-700 cursor-pointer"
+              >
+                + Add Image URL
+              </button>
+            </div>
+            <div className="flex flex-col gap-2">
+              {formData.images.map((url, idx) => (
+                <div key={idx} className="flex gap-2 items-center">
+                  <input
+                    type="text"
+                    value={url}
+                    onChange={(e) => handleGalleryChange(idx, e.target.value)}
+                    placeholder="https://..."
+                    className="flex-1 px-3 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeGalleryField(idx)}
+                    className="text-red-500 hover:text-red-700 font-bold text-xs px-2 cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Description */}

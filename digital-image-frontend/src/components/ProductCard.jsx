@@ -119,7 +119,7 @@ export default function ProductCard({ product, onAddToCart }) {
         </Link>
 
         {/* Favorite Heart Toggle */}
-        <button
+        {/* <button
           onClick={toggleFavorite}
           type="button"
           aria-label={
@@ -135,7 +135,7 @@ export default function ProductCard({ product, onAddToCart }) {
                 : "text-slate-600 stroke-[2.2]"
             }
           />
-        </button>
+        </button> */}
       </div>
 
       {/* 2. DETAILS SECTION */}

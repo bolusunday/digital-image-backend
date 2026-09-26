@@ -9,13 +9,14 @@ import {
   AlertCircle,
   CheckCircle2,
   Image as ImageIcon,
+  Images as ImagesIcon,
   Tag,
   Edit3,
   X,
   DollarSign,
   FileText,
 } from "lucide-react";
-import { API_URL } from "../config";
+import { API_URL } from "../../config";
 
 const CATEGORY_OPTIONS = [
   { name: "Cottage Core", value: "cottagecore" },
@@ -44,18 +45,26 @@ function EditProductModal({
     price: "",
     category: "sport",
     public_thumb_url: "",
+    images: "",
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (product) {
+      const existingImages = Array.isArray(product.images)
+        ? product.images.join("\n")
+        : Array.isArray(product.gallery)
+          ? product.gallery.join("\n")
+          : "";
+
       setFormData({
         title: product.title || "",
         description: product.description || "",
         price: product.price ? (Number(product.price) / 100).toString() : "0",
         category: (product.category || "sport").toLowerCase().trim(),
         public_thumb_url: product.public_thumb_url || "",
+        images: existingImages,
       });
       setError("");
     }
@@ -76,11 +85,21 @@ function EditProductModal({
     const priceInCents = Math.round(parseFloat(formData.price || "0") * 100);
     const cleanCategory = formData.category.toLowerCase().trim();
 
-    // inside your submit/update handler:
-    try {
-      setSaving(true);
-      setError(null);
+    // Parse image URLs from newline or comma separated values into an array
+    const parsedImages = formData.images
+      .split(/[\n,]/)
+      .map((url) => url.trim())
+      .filter((url) => url.length > 0);
 
+    // Ensure thumbnail is included if gallery is empty
+    const finalImagesList =
+      parsedImages.length > 0
+        ? parsedImages
+        : formData.public_thumb_url
+          ? [formData.public_thumb_url]
+          : [];
+
+    try {
       const res = await fetch(`${API_URL}/api/admin/products/${product.id}`, {
         method: "PUT",
         headers: {
@@ -93,6 +112,7 @@ function EditProductModal({
           price: priceInCents,
           category: cleanCategory,
           public_thumb_url: formData.public_thumb_url,
+          images: finalImagesList,
         }),
       });
 
@@ -105,6 +125,7 @@ function EditProductModal({
             ...formData,
             price: priceInCents,
             category: cleanCategory,
+            images: finalImagesList,
           },
         );
         onClose();
@@ -121,43 +142,36 @@ function EditProductModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
-           {" "}
-      <div className="bg-white border border-slate-200 rounded-3xl max-w-lg w-full p-6 shadow-2xl relative text-slate-800 animate-in fade-in zoom-in-95 duration-200">
-                {/* Header */}       {" "}
+      <div className="bg-white border border-slate-200 rounded-3xl max-w-lg w-full p-6 shadow-2xl relative text-slate-800 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+        {/* Header */}
         <div className="flex justify-between items-center mb-5 border-b border-slate-100 pb-4">
-                   {" "}
           <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                       {" "}
             <div className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
-                            <Edit3 size={18} />           {" "}
+              <Edit3 size={18} />
             </div>
-                        <span>Edit Product Details</span>         {" "}
+            <span>Edit Product Details</span>
           </h3>
-                   {" "}
           <button
             onClick={onClose}
             className="p-1 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer rounded-lg hover:bg-slate-100"
           >
-                        <X size={20} />         {" "}
+            <X size={20} />
           </button>
-                 {" "}
         </div>
-               {" "}
+
         {error && (
           <div className="mb-4 text-xs font-semibold text-rose-700 bg-rose-50 p-3 rounded-xl border border-rose-200 flex items-center gap-2">
-                        <AlertCircle size={16} />           {" "}
-            <span>{error}</span>         {" "}
+            <AlertCircle size={16} />
+            <span>{error}</span>
           </div>
         )}
-               {" "}
+
         <form onSubmit={handleSubmit} className="space-y-4">
-                    {/* Title */}         {" "}
+          {/* Title */}
           <div>
-                       {" "}
             <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
-                            Title *            {" "}
+              Title *
             </label>
-                       {" "}
             <input
               type="text"
               name="title"
@@ -166,17 +180,15 @@ function EditProductModal({
               required
               className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 focus:outline-none transition-all"
             />
-                     {" "}
           </div>
-                    {/* Category & Price Grid */}         {" "}
+
+          {/* Category & Price Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {/* Category Dropdown */}           {" "}
+            {/* Category Dropdown */}
             <div>
-                           {" "}
               <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
-                                Category *              {" "}
+                Category *
               </label>
-                           {" "}
               <select
                 name="category"
                 value={formData.category}
@@ -184,23 +196,19 @@ function EditProductModal({
                 required
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 focus:outline-none transition-all cursor-pointer capitalize"
               >
-                               {" "}
                 {CATEGORY_OPTIONS.map((cat) => (
                   <option key={cat.value} value={cat.value}>
-                                        {cat.name}                 {" "}
+                    {cat.name}
                   </option>
                 ))}
-                             {" "}
               </select>
-                         {" "}
             </div>
-                        {/* Price */}           {" "}
+
+            {/* Price */}
             <div>
-                           {" "}
               <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
-                                Price ($ USD) *              {" "}
+                Price ($ USD) *
               </label>
-                           {" "}
               <input
                 type="number"
                 step="0.01"
@@ -210,33 +218,44 @@ function EditProductModal({
                 required
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 focus:outline-none transition-all"
               />
-                         {" "}
             </div>
-                     {" "}
           </div>
-                    {/* Public Thumbnail URL */}         {" "}
+
+          {/* Main Thumbnail URL */}
           <div>
-                       {" "}
             <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
-                            Thumbnail URL            {" "}
+              Main Cover Thumbnail URL
             </label>
-                       {" "}
             <input
               type="text"
               name="public_thumb_url"
               value={formData.public_thumb_url}
               onChange={handleChange}
+              placeholder="https://..."
               className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 focus:outline-none transition-all"
             />
-                     {" "}
           </div>
-                    {/* Description */}         {" "}
+
+          {/* Multi-Image Gallery URLs */}
           <div>
-                       {" "}
             <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
-                            Description            {" "}
+              Gallery Image URLs (One URL per line or comma-separated)
             </label>
-                       {" "}
+            <textarea
+              name="images"
+              rows={3}
+              value={formData.images}
+              onChange={handleChange}
+              placeholder="https://image1.jpg&#10;https://image2.jpg"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 focus:outline-none transition-all font-mono"
+            />
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
+              Description
+            </label>
             <textarea
               name="description"
               rows={3}
@@ -244,43 +263,34 @@ function EditProductModal({
               onChange={handleChange}
               className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 focus:outline-none transition-all"
             />
-                     {" "}
           </div>
-                    {/* Actions */}         {" "}
+
+          {/* Actions */}
           <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
-                       {" "}
             <button
               type="button"
               onClick={onClose}
               className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
             >
-                            Cancel            {" "}
+              Cancel
             </button>
-                       {" "}
             <button
               type="submit"
               disabled={saving}
               className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md hover:shadow-indigo-500/20 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
             >
-                           {" "}
               {saving ? (
                 <>
-                                   {" "}
-                  <Loader2 className="animate-spin" size={14} />               
-                    <span>Saving...</span>               {" "}
+                  <Loader2 className="animate-spin" size={14} />
+                  <span>Saving...</span>
                 </>
               ) : (
                 <span>Save Changes</span>
               )}
-                         {" "}
             </button>
-                     {" "}
           </div>
-                 {" "}
         </form>
-             {" "}
       </div>
-         {" "}
     </div>
   );
 }
@@ -289,25 +299,27 @@ function EditProductModal({
 // 2. MAIN ADMIN DASHBOARD COMPONENT
 // ==========================================
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState("listings"); // 'listings' | 'upload'
+  const [activeTab, setActiveTab] = useState("listings");
   const [products, setProducts] = useState([]);
-  const [loadingProducts, setLoadingProducts] = useState(true); // Edit Modal State
+  const [loadingProducts, setLoadingProducts] = useState(true);
 
   const [editingProduct, setEditingProduct] = useState(null);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false); // Upload Form State
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
+  // Upload Form State
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
   const [category, setCategory] = useState("sport");
   const [thumbnail, setThumbnail] = useState(null);
-  const [originalFile, setOriginalFile] = useState(null); // Status State
+  const [galleryFiles, setGalleryFiles] = useState([]); // Multiple gallery images state
+  const [originalFile, setOriginalFile] = useState(null);
 
   const [uploading, setUploading] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [feedback, setFeedback] = useState({ type: "", message: "" });
 
-  const token = localStorage.getItem("token"); // Fetch product list
+  const token = localStorage.getItem("token");
 
   const fetchProducts = async () => {
     setLoadingProducts(true);
@@ -324,12 +336,12 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     fetchProducts();
-  }, []); // Handle Edit Click
+  }, []);
 
   const handleEditClick = (product) => {
     setEditingProduct(product);
     setIsEditModalOpen(true);
-  }; // Update State when product editing succeeds
+  };
 
   const handleProductUpdated = (updatedProduct) => {
     setProducts((prev) =>
@@ -339,7 +351,7 @@ export default function AdminDashboard() {
       type: "success",
       message: `Product "${updatedProduct.title}" updated successfully!`,
     });
-  }; // Handle Product Upload
+  };
 
   const handleUpload = async (e) => {
     e.preventDefault();
@@ -365,6 +377,13 @@ export default function AdminDashboard() {
     formData.append("thumbnail", thumbnail);
     formData.append("original_file", originalFile);
 
+    // Append multiple preview gallery images if provided
+    if (galleryFiles && galleryFiles.length > 0) {
+      Array.from(galleryFiles).forEach((file) => {
+        formData.append("gallery", file);
+      });
+    }
+
     try {
       const res = await fetch(`${API_URL}/api/products/upload`, {
         method: "POST",
@@ -380,13 +399,15 @@ export default function AdminDashboard() {
       setFeedback({
         type: "success",
         message: `Product "${data.product?.title || title}" created successfully!`,
-      }); // Reset form
+      });
 
+      // Reset form
       setTitle("");
       setDescription("");
       setPrice("");
       setCategory("sport");
       setThumbnail(null);
+      setGalleryFiles([]);
       setOriginalFile(null);
 
       fetchProducts();
@@ -396,7 +417,7 @@ export default function AdminDashboard() {
     } finally {
       setUploading(false);
     }
-  }; // Handle Product Delete
+  };
 
   const handleDelete = async (id, productTitle) => {
     if (!window.confirm(`Are you sure you want to delete "${productTitle}"?`)) {
@@ -428,26 +449,21 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-slate-50/60 text-slate-800 p-4 sm:p-6 md:p-10">
-           {" "}
       <div className="max-w-6xl mx-auto space-y-8">
-                {/* Header */}       {" "}
+        {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-200 pb-6">
-                   {" "}
           <div>
-                       {" "}
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-                            Admin Dashboard            {" "}
+              Admin Dashboard
             </h1>
-                       {" "}
             <p className="text-slate-500 text-xs sm:text-sm mt-1 font-medium">
-                            Manage your store's digital inventory, categorize,
-              and upload new assets.            {" "}
+              Manage your store's digital inventory, categorize, and upload new
+              assets.
             </p>
-                     {" "}
           </div>
-                    {/* Navigation Tabs */}         {" "}
+
+          {/* Navigation Tabs */}
           <div className="flex gap-1.5 bg-slate-200/70 p-1.5 rounded-2xl shrink-0 border border-slate-200">
-                       {" "}
             <button
               onClick={() => setActiveTab("listings")}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
@@ -456,10 +472,9 @@ export default function AdminDashboard() {
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
-                            <Package size={16} />             {" "}
-              <span>Catalog ({products.length})</span>           {" "}
+              <Package size={16} />
+              <span>Catalog ({products.length})</span>
             </button>
-                       {" "}
             <button
               onClick={() => setActiveTab("upload")}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
@@ -468,14 +483,13 @@ export default function AdminDashboard() {
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
-                            <PlusCircle size={16} />             {" "}
-              <span>Add New Asset</span>           {" "}
+              <PlusCircle size={16} />
+              <span>Add New Asset</span>
             </button>
-                     {" "}
           </div>
-                 {" "}
         </div>
-                {/* Global Feedback Banner */}       {" "}
+
+        {/* Global Feedback Banner */}
         {feedback.message && (
           <div
             className={`flex items-center justify-between p-4 rounded-2xl border text-xs font-bold ${
@@ -484,58 +498,46 @@ export default function AdminDashboard() {
                 : "bg-rose-50 border-rose-200 text-rose-800"
             }`}
           >
-                       {" "}
             <div className="flex items-center gap-2">
-                           {" "}
               {feedback.type === "success" ? (
                 <CheckCircle2 size={18} className="shrink-0 text-emerald-600" />
               ) : (
                 <AlertCircle size={18} className="shrink-0 text-rose-600" />
               )}
-                            <span>{feedback.message}</span>           {" "}
+              <span>{feedback.message}</span>
             </div>
-                       {" "}
             <button
               onClick={() => setFeedback({ type: "", message: "" })}
               className="text-xs font-extrabold opacity-70 hover:opacity-100 cursor-pointer"
             >
-                            Dismiss            {" "}
+              Dismiss
             </button>
-                     {" "}
           </div>
         )}
-                {/* TAB 1: PRODUCT LISTINGS */}       {" "}
+
+        {/* TAB 1: PRODUCT LISTINGS */}
         {activeTab === "listings" && (
           <div>
-                       {" "}
             {loadingProducts ? (
               <div className="flex items-center justify-center gap-2 py-16 text-slate-500 text-xs font-medium">
-                               {" "}
-                <Loader2 className="animate-spin text-indigo-600" size={20} /> 
-                              <span>Loading digital catalog...</span>           
-                 {" "}
+                <Loader2 className="animate-spin text-indigo-600" size={20} />
+                <span>Loading digital catalog...</span>
               </div>
             ) : products.length === 0 ? (
               <div className="text-center py-16 border border-dashed border-slate-200 rounded-3xl bg-white">
-                               {" "}
-                <Package className="mx-auto text-slate-300 mb-3" size={48} />   
-                           {" "}
+                <Package className="mx-auto text-slate-300 mb-3" size={48} />
                 <p className="text-slate-500 font-medium text-xs">
-                                    No products found in database.              
-                   {" "}
+                  No products found in database.
                 </p>
-                               {" "}
                 <button
                   onClick={() => setActiveTab("upload")}
                   className="mt-4 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-md transition-all cursor-pointer"
                 >
-                                    Create First Product                {" "}
+                  Create First Product
                 </button>
-                             {" "}
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                               {" "}
                 {products.map((product) => {
                   const rawPrice = Number(
                     (product.price / 100).toFixed(2) || 0,
@@ -543,18 +545,19 @@ export default function AdminDashboard() {
                   const priceInDollars =
                     rawPrice > 500 ? rawPrice / 100 : rawPrice;
 
+                  const imageCount =
+                    (product.images && product.images.length) ||
+                    (product.gallery && product.gallery.length) ||
+                    1;
+
                   return (
                     <div
                       key={product.id}
                       className="bg-white border border-slate-200/90 rounded-3xl overflow-hidden flex flex-col justify-between hover:shadow-lg hover:border-slate-300 transition-all duration-200"
                     >
-                                           {" "}
                       <div>
-                                               {" "}
-                        {/* Thumbnail Preview with object-contain */}           
-                                   {" "}
+                        {/* Thumbnail Preview with object-contain */}
                         <div className="h-44 bg-slate-100/80 overflow-hidden relative border-b border-slate-100 flex items-center justify-center p-3">
-                                                   {" "}
                           {product.public_thumb_url || product.imageUrl ? (
                             <img
                               src={product.public_thumb_url || product.imageUrl}
@@ -563,67 +566,54 @@ export default function AdminDashboard() {
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-slate-300">
-                                                           {" "}
-                              <ImageIcon size={32} />                         
-                               {" "}
+                              <ImageIcon size={32} />
                             </div>
                           )}
-                                                    {/* Category Badge */}     
-                                             {" "}
+
+                          {/* Category Badge */}
                           {product.category && (
                             <span className="absolute top-3 left-3 bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-lg text-[10px] font-extrabold text-indigo-700 border border-slate-200/80 uppercase tracking-wider shadow-xs">
-                                                            {product.category} 
-                                                       {" "}
+                              {product.category}
                             </span>
                           )}
-                                                   {" "}
+
+                          {/* Multi-image indicator tag */}
+                          {imageCount > 1 && (
+                            <span className="absolute bottom-3 left-3 bg-slate-900/80 backdrop-blur-md px-2 py-0.5 rounded-md text-[10px] font-bold text-white flex items-center gap-1 shadow-xs">
+                              <ImagesIcon size={11} />
+                              <span>{imageCount} Images</span>
+                            </span>
+                          )}
+
                           <span className="absolute top-3 right-3 bg-slate-900/90 backdrop-blur-md px-2.5 py-1 rounded-lg text-xs font-extrabold text-white shadow-xs">
-                                                        $
-                            {priceInDollars.toFixed(2)}                       
-                             {" "}
+                            ${priceInDollars.toFixed(2)}
                           </span>
-                                                 {" "}
                         </div>
-                                                {/* Content */}                 
-                             {" "}
+
+                        {/* Content */}
                         <div className="p-5 space-y-1.5">
-                                                   {" "}
                           <h3 className="font-bold text-slate-900 text-sm truncate">
-                                                        {product.title}         
-                                           {" "}
+                            {product.title}
                           </h3>
-                                                   {" "}
                           <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
-                                                       {" "}
-                            {product.description || "No description provided."} 
-                                                   {" "}
+                            {product.description || "No description provided."}
                           </p>
-                                                 {" "}
                         </div>
-                                             {" "}
                       </div>
-                                            {/* Footer Actions */}             
-                             {" "}
+
+                      {/* Footer Actions */}
                       <div className="px-5 pb-5 pt-2 flex items-center justify-between border-t border-slate-100">
-                                               {" "}
                         <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
-                                                    ID: #{product.id}           
-                                     {" "}
+                          ID: #{product.id}
                         </span>
-                                               {" "}
                         <div className="flex gap-2">
-                                                    {/* EDIT BUTTON */}         
-                                         {" "}
                           <button
                             onClick={() => handleEditClick(product)}
                             className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/60 rounded-xl text-xs font-bold transition-colors cursor-pointer"
                           >
-                                                        <Edit3 size={14} />     
-                                                  <span>Edit</span>             
-                                       {" "}
+                            <Edit3 size={14} />
+                            <span>Edit</span>
                           </button>
-                                                    {/* DELETE BUTTON */}       
-                                           {" "}
                           <button
                             onClick={() =>
                               handleDelete(product.id, product.title)
@@ -631,56 +621,44 @@ export default function AdminDashboard() {
                             disabled={deletingId === product.id}
                             className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/60 rounded-xl text-xs font-bold transition-colors disabled:opacity-50 cursor-pointer"
                           >
-                                                       {" "}
                             {deletingId === product.id ? (
                               <Loader2 className="animate-spin" size={14} />
                             ) : (
                               <Trash2 size={14} />
                             )}
-                                                        <span>Delete</span>     
-                                               {" "}
+                            <span>Delete</span>
                           </button>
-                                                 {" "}
                         </div>
-                                             {" "}
                       </div>
-                                         {" "}
                     </div>
                   );
                 })}
-                             {" "}
               </div>
             )}
-                     {" "}
           </div>
         )}
-                {/* TAB 2: UPLOAD FORM */}       {" "}
+
+        {/* TAB 2: UPLOAD FORM */}
         {activeTab === "upload" && (
           <div className="max-w-2xl mx-auto bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-xs">
-                       {" "}
             <h2 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2 border-b border-slate-100 pb-4">
-                           {" "}
               <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
-                                <UploadCloud size={20} />             {" "}
+                <UploadCloud size={20} />
               </div>
-                            <span>Upload Digital Product</span>           {" "}
+              <span>Upload Digital Product</span>
             </h2>
-                       {" "}
+
             <form onSubmit={handleUpload} className="space-y-4">
-                            {/* Product Title */}             {" "}
+              {/* Product Title */}
               <div>
-                               {" "}
                 <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1.5">
-                                    Product Title *                {" "}
+                  Product Title *
                 </label>
-                               {" "}
                 <div className="relative flex items-center">
-                                   {" "}
                   <FileText
                     className="absolute left-3 text-slate-400"
                     size={16}
                   />
-                                   {" "}
                   <input
                     type="text"
                     placeholder="e.g. Cyberpunk City 3D Asset Pack"
@@ -689,49 +667,37 @@ export default function AdminDashboard() {
                     required
                     className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 focus:outline-none transition-all"
                   />
-                                 {" "}
                 </div>
-                             {" "}
               </div>
-                            {/* CATEGORY & PRICE GRID */}             {" "}
+
+              {/* CATEGORY & PRICE GRID */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                {/* Category Selection Dropdown */}             
-                 {" "}
+                {/* Category Selection Dropdown */}
                 <div>
-                                   {" "}
                   <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1.5 flex items-center gap-1">
-                                       {" "}
-                    <Tag size={13} className="text-indigo-600" />               
-                        <span>Category *</span>                 {" "}
+                    <Tag size={13} className="text-indigo-600" />
+                    <span>Category *</span>
                   </label>
-                                   {" "}
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
                     required
                     className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 focus:outline-none transition-all cursor-pointer capitalize"
                   >
-                                       {" "}
                     {CATEGORY_OPTIONS.map((cat) => (
                       <option key={cat.value} value={cat.value}>
-                                                {cat.name}                   
-                         {" "}
+                        {cat.name}
                       </option>
                     ))}
-                                     {" "}
                   </select>
-                                 {" "}
                 </div>
-                                {/* Price */}               {" "}
+
+                {/* Price */}
                 <div>
-                                   {" "}
                   <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1.5 flex items-center gap-1">
-                                       {" "}
-                    <DollarSign size={13} className="text-indigo-600" />       
-                                <span>Price ($ USD) *</span>               
-                     {" "}
+                    <DollarSign size={13} className="text-indigo-600" />
+                    <span>Price ($ USD) *</span>
                   </label>
-                                   {" "}
                   <input
                     type="number"
                     step="0.01"
@@ -741,17 +707,14 @@ export default function AdminDashboard() {
                     required
                     className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 focus:outline-none transition-all"
                   />
-                                 {" "}
                 </div>
-                             {" "}
               </div>
-                            {/* Description */}             {" "}
+
+              {/* Description */}
               <div>
-                               {" "}
                 <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1.5">
-                                    Description                {" "}
+                  Description
                 </label>
-                               {" "}
                 <textarea
                   rows={3}
                   placeholder="Details about what buyers get in this digital download..."
@@ -759,16 +722,13 @@ export default function AdminDashboard() {
                   onChange={(e) => setDescription(e.target.value)}
                   className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 focus:outline-none transition-all"
                 />
-                             {" "}
               </div>
-                            {/* Public Thumbnail File Input */}             {" "}
+
+              {/* Public Main Thumbnail File Input */}
               <div>
-                               {" "}
                 <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1.5">
-                                    Public Preview Thumbnail Image (S3
-                  /thumbnails) *                {" "}
+                  Primary Cover Thumbnail Image (S3 /thumbnails) *
                 </label>
-                               {" "}
                 <input
                   type="file"
                   accept="image/*"
@@ -776,56 +736,64 @@ export default function AdminDashboard() {
                   required
                   className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer"
                 />
-                             {" "}
               </div>
-                            {/* Private Digital Asset File Input */}           
-               {" "}
+
+              {/* Multiple Gallery Images File Input */}
               <div>
-                               {" "}
                 <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1.5">
-                                    Private Digital Asset File (S3 /originals) *
-                                 {" "}
+                  Additional Gallery Slider Images (Optional - Select Multiple)
                 </label>
-                               {" "}
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(e) => setGalleryFiles(e.target.files)}
+                  className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer"
+                />
+                {galleryFiles && galleryFiles.length > 0 && (
+                  <p className="mt-1 text-[11px] font-semibold text-indigo-600">
+                    Selected {galleryFiles.length} additional image(s) for
+                    slider gallery.
+                  </p>
+                )}
+              </div>
+
+              {/* Private Digital Asset File Input */}
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                  Private Digital Asset File (S3 /originals) *
+                </label>
                 <input
                   type="file"
                   onChange={(e) => setOriginalFile(e.target.files[0])}
                   required
                   className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer"
                 />
-                             {" "}
               </div>
-                           {" "}
+
               <button
                 type="submit"
                 disabled={uploading}
                 className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-md hover:shadow-indigo-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-2"
               >
-                               {" "}
                 {uploading ? (
                   <>
-                                       {" "}
-                    <Loader2 className="animate-spin" size={18} />             
-                          <span>Uploading files to S3...</span>               
-                     {" "}
+                    <Loader2 className="animate-spin" size={18} />
+                    <span>Uploading files to S3...</span>
                   </>
                 ) : (
                   <>
-                                        <UploadCloud size={18} />               
-                        <span>Upload Product to Catalog</span>               
-                     {" "}
+                    <UploadCloud size={18} />
+                    <span>Upload Product to Catalog</span>
                   </>
                 )}
-                             {" "}
               </button>
-                         {" "}
             </form>
-                     {" "}
           </div>
         )}
-             {" "}
       </div>
-            {/* EDIT PRODUCT MODAL */}     {" "}
+
+      {/* EDIT PRODUCT MODAL */}
       <EditProductModal
         product={editingProduct}
         isOpen={isEditModalOpen}
@@ -833,7 +801,6 @@ export default function AdminDashboard() {
         onProductUpdated={handleProductUpdated}
         token={token}
       />
-         {" "}
     </div>
   );
 }

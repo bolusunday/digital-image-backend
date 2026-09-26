@@ -239,7 +239,8 @@ app.get("/api/download/:productId", verifyToken, async (req, res) => {
 // --------------- Admin Product Edit Route ---------------
 app.put("/api/admin/products/:id", async (req, res) => {
   const productId = parseInt(req.params.id, 10);
-  const { title, description, price, category, public_thumb_url } = req.body;
+  const { title, description, price, category, public_thumb_url, images } =
+    req.body;
 
   if (isNaN(productId)) {
     return res.status(400).json({ error: "Invalid product ID format." });
@@ -256,6 +257,7 @@ app.put("/api/admin/products/:id", async (req, res) => {
     const safeThumbUrl = public_thumb_url ?? null;
     const safePrice = Number(price);
     const safeCategory = (category || "sport").toLowerCase().trim();
+    const safeImages = Array.isArray(images) ? images : [];
 
     const updateResult = await pool.query(
       `UPDATE products 
@@ -263,8 +265,9 @@ app.put("/api/admin/products/:id", async (req, res) => {
            description = $2, 
            price = $3, 
            category = $4,
-           public_thumb_url = $5
-       WHERE id = $6 
+           public_thumb_url = $5,
+           images = $6
+       WHERE id = $7 
        RETURNING *`,
       [
         title,
@@ -272,6 +275,7 @@ app.put("/api/admin/products/:id", async (req, res) => {
         safePrice,
         safeCategory,
         safeThumbUrl,
+        safeImages,
         productId,
       ],
     );
@@ -328,8 +332,9 @@ app.post("/api/products/:id/guest-reviews", async (req, res) => {
     return res.status(400).json({ error: "Rating must be between 1 and 5." });
   }
 
-  const client = await pool.connect();
+  let client;
   try {
+    client = await pool.connect();
     await client.query("BEGIN");
 
     const matchCheck = await client.query(
@@ -404,11 +409,11 @@ app.post("/api/products/:id/guest-reviews", async (req, res) => {
       stats: { rating_average: newAverage, rating_count: newCount },
     });
   } catch (err) {
-    await client.query("ROLLBACK");
+    if (client) await client.query("ROLLBACK");
     console.error("Guest review submission error:", err);
     res.status(500).json({ error: "Failed to verify and post review." });
   } finally {
-    client.release();
+    if (client) client.release();
   }
 });
 
@@ -423,6 +428,7 @@ async function initDbSchema() {
         price INTEGER NOT NULL,
         category VARCHAR(100) DEFAULT 'sport',
         public_thumb_url TEXT,
+        images TEXT[],
         private_file_key TEXT,
         rating_average NUMERIC DEFAULT 0,
         rating_count INTEGER DEFAULT 0,
@@ -469,6 +475,7 @@ async function initDbSchema() {
 
     await pool.query(`
       ALTER TABLE products ADD COLUMN IF NOT EXISTS category VARCHAR(100) DEFAULT 'sport';
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS images TEXT[];
       ALTER TABLE orders ADD COLUMN IF NOT EXISTS user_id INTEGER NULL;
       ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_email VARCHAR(255);
       ALTER TABLE orders ADD COLUMN IF NOT EXISTS stripe_payment_intent_id VARCHAR(255);
