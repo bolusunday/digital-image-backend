@@ -1,7 +1,7 @@
 // src/components/ProductCard.jsx
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { ShoppingCart, Star, Check } from "lucide-react";
+import { ShoppingCart, Star, Check, Heart, Download } from "lucide-react";
 
 // Helper to reliably retrieve rating stats or generate deterministic fallbacks
 const getProductStats = (product) => {
@@ -47,7 +47,8 @@ const getProductStats = (product) => {
 
 export default function ProductCard({ product, onAddToCart }) {
   const [isAdded, setIsAdded] = useState(false);
-  const { ratingAverage, ratingCount, salesCount } = getProductStats(product);
+  const [isFavorited, setIsFavorited] = useState(false);
+  const { ratingAverage, ratingCount } = getProductStats(product);
 
   const rawPrice = (Number(product.price || 0) / 100).toFixed(2);
   const priceInDollars = rawPrice > 500 ? rawPrice / 100 : rawPrice;
@@ -66,7 +67,9 @@ export default function ProductCard({ product, onAddToCart }) {
     },
   );
 
-  const handleAddToCart = () => {
+  const handleAddToCart = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (onAddToCart) {
       onAddToCart(product);
       setIsAdded(true);
@@ -74,75 +77,127 @@ export default function ProductCard({ product, onAddToCart }) {
     }
   };
 
+  const toggleFavorite = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsFavorited((prev) => !prev);
+  };
+
   const imageUrl =
     product.public_thumb_url ||
     product.imageUrl ||
     product.image ||
-    "https://via.placeholder.com/400x300";
+    "https://via.placeholder.com/400x500";
+
+  // Dynamic Shop Name logic based on category
+  const rawCategory = String(product.category || "")
+    .toLowerCase()
+    .trim();
+  const isEBook =
+    rawCategory === "ebook" ||
+    rawCategory === "e-book" ||
+    rawCategory === "e book" ||
+    rawCategory === "e-books";
+
+  const shopName =
+    product.shop_name ||
+    product.shopName ||
+    product.vendor ||
+    (isEBook ? "Pegty Library" : "Pegty Studio");
 
   return (
-    <div className="group relative w-full bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-xs hover:shadow-xl hover:border-slate-300 transition-all duration-300 flex flex-col justify-between h-full">
-      {/* 1. IMAGE CONTAINER - USES OBJECT-CONTAIN TO PREVENT ANY CROPPING */}
-      <Link
-        to={`/product/${product.id}`}
-        className="relative w-full aspect-[4/3] bg-slate-100/60 p-2 sm:p-3 block shrink-0 overflow-hidden"
-      >
-        <img
-          src={imageUrl}
-          alt={product.title}
-          loading="lazy"
-          className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500 ease-out"
-        />
+    <div className="group relative w-full bg-white rounded-2xl border border-slate-200/90 shadow-xs hover:shadow-xl hover:border-slate-300 transition-all duration-300 flex flex-col justify-between h-full overflow-hidden p-3">
+      {/* 1. MEDIA CONTAINER */}
+      <div className="relative w-full aspect-[4/5] bg-slate-100/80 rounded-xl overflow-hidden shrink-0">
+        <Link to={`/product/${product.id}`} className="block w-full h-full">
+          <img
+            src={imageUrl}
+            alt={product.title}
+            loading="lazy"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+          />
+        </Link>
 
-        {/* Category Badge Overlay */}
-        <span className="absolute bottom-2.5 left-2.5 sm:bottom-3 sm:left-3 bg-slate-900/90 backdrop-blur-md text-[10px] sm:text-xs font-bold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg text-white shadow-md z-10 capitalize tracking-wide">
-          {product.category || "Digital Asset"}
-        </span>
-      </Link>
+        {/* Favorite Heart Toggle */}
+        <button
+          onClick={toggleFavorite}
+          type="button"
+          aria-label={
+            isFavorited ? "Remove from Favorites" : "Add to Favorites"
+          }
+          className="absolute top-2.5 right-2.5 z-10 p-2 rounded-full bg-white/90 backdrop-blur-md text-slate-700 shadow-sm hover:scale-110 hover:bg-white hover:text-rose-500 transition-all duration-200 cursor-pointer"
+        >
+          <Heart
+            size={15}
+            className={
+              isFavorited
+                ? "fill-rose-500 text-rose-500"
+                : "text-slate-600 stroke-[2.2]"
+            }
+          />
+        </button>
+      </div>
 
       {/* 2. DETAILS SECTION */}
-      <div className="p-3.5 sm:p-4 flex flex-col justify-between flex-1 bg-white">
+      <div className="mt-3 flex flex-col justify-between flex-1 gap-2">
         <div>
+          {/* Badge */}
+          <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-indigo-50 border border-indigo-100 text-[10px] font-bold text-indigo-700 tracking-wide uppercase mb-1.5">
+            <Download size={11} className="shrink-0 stroke-[2.5]" />
+            <span>Digital Download</span>
+          </div>
+
           {/* Title */}
           <Link to={`/product/${product.id}`} className="no-underline block">
-            <h3 className="text-sm sm:text-base font-bold text-slate-900 line-clamp-1 group-hover:text-indigo-600 transition-colors leading-snug">
+            <h3
+              title={product.title}
+              className="text-sm font-bold text-slate-900 line-clamp-2 leading-snug group-hover:text-indigo-600 transition-colors"
+            >
               {product.title}
             </h3>
           </Link>
 
-          {/* Ratings & Sales */}
-          <div className="flex items-center gap-1.5 mt-1 text-xs text-slate-500">
-            <div className="flex items-center gap-0.5 text-amber-500">
+          {/* Ratings & Shop Metadata */}
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-slate-500">
+            <div className="flex items-center gap-1">
               <Star
-                size={13}
+                size={12}
                 className="fill-amber-400 text-amber-400 shrink-0"
               />
-              <span className="font-bold text-slate-900">
+              <span className="font-bold text-slate-900 text-xs">
                 {ratingAverage.toFixed(1)}
               </span>
+              <span className="text-slate-400">
+                ({ratingCount.toLocaleString()})
+              </span>
             </div>
-            <span>({ratingCount.toLocaleString()})</span>
-            <span>•</span>
-            <span className="font-medium text-slate-600 truncate">
-              {salesCount.toLocaleString()} sold
+
+            <span className="text-slate-300">•</span>
+
+            <span className="truncate">
+              By{" "}
+              <span className="font-semibold text-slate-700">{shopName}</span>
             </span>
           </div>
         </div>
 
         {/* Pricing & Add to Cart Action */}
-        <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
-          <div className="flex items-baseline gap-1.5 min-w-0">
+        <div className="mt-2 pt-2.5 border-t border-slate-100 flex flex-col gap-2.5">
+          <div className="flex items-baseline gap-1.5 flex-wrap">
             <span className="text-base sm:text-lg font-black text-slate-900 truncate">
               {formattedPrice}
             </span>
             <span className="text-xs text-slate-400 line-through truncate">
               {formattedOriginalPrice}
             </span>
+            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-1.5 py-0.5 rounded-md">
+              50% OFF
+            </span>
           </div>
 
           <button
             onClick={handleAddToCart}
-            className={`py-1.5 sm:py-2 px-3 sm:px-3.5 rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 cursor-pointer flex items-center gap-1.5 shrink-0 shadow-xs ${
+            className={`w-full py-2 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 cursor-pointer flex items-center justify-center gap-1.5 shrink-0 shadow-xs ${
               isAdded
                 ? "bg-emerald-600 text-white"
                 : "bg-slate-900 hover:bg-indigo-600 text-white"

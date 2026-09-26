@@ -49,11 +49,13 @@ function Home({ products, isLoading, onAddToCart }) {
     ebook: "E-Books",
   };
 
+  // Filter products: If a specific category is selected, filter by it.
+  // If viewing all products on the home page, exclude "ebook" category products.
   let displayedProducts = currentCategory
     ? products.filter(
         (p) => p.category?.toLowerCase() === currentCategory.toLowerCase(),
       )
-    : products;
+    : products.filter((p) => p.category?.toLowerCase() !== "ebook");
 
   if (searchQuery) {
     displayedProducts = displayedProducts.filter((p) => {
@@ -93,8 +95,7 @@ function Home({ products, isLoading, onAddToCart }) {
               Discover our high-quality, unique and ready-to-use images in
               categories of Cottage Core, Dark Cottage Core, Rustik & Gothic,
               Vintage Photography, Winter & Christmas, Modern & Classic Wall
-              Arts and Black Arts. We also have in stock, collection of highly
-              informative E-books
+              Arts and Black Arts.
             </p>
           )}
         </div>
