@@ -48,7 +48,9 @@ const getProductStats = (product) => {
 export default function ProductCard({ product, onAddToCart }) {
   const [isAdded, setIsAdded] = useState(false);
   const [isFavorited, setIsFavorited] = useState(false);
-  const { ratingAverage, ratingCount } = getProductStats(product);
+
+  // 1. UPDATED: Extracted salesCount here
+  const { ratingAverage, ratingCount, salesCount } = getProductStats(product);
 
   const rawPrice = (Number(product.price || 0) / 100).toFixed(2);
   const priceInDollars = rawPrice > 500 ? rawPrice / 100 : rawPrice;
@@ -117,25 +119,6 @@ export default function ProductCard({ product, onAddToCart }) {
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
           />
         </Link>
-
-        {/* Favorite Heart Toggle */}
-        {/* <button
-          onClick={toggleFavorite}
-          type="button"
-          aria-label={
-            isFavorited ? "Remove from Favorites" : "Add to Favorites"
-          }
-          className="absolute top-2.5 right-2.5 z-10 p-2 rounded-full bg-white/90 backdrop-blur-md text-slate-700 shadow-sm hover:scale-110 hover:bg-white hover:text-rose-500 transition-all duration-200 cursor-pointer"
-        >
-          <Heart
-            size={15}
-            className={
-              isFavorited
-                ? "fill-rose-500 text-rose-500"
-                : "text-slate-600 stroke-[2.2]"
-            }
-          />
-        </button> */}
       </div>
 
       {/* 2. DETAILS SECTION */}
@@ -157,7 +140,7 @@ export default function ProductCard({ product, onAddToCart }) {
             </h3>
           </Link>
 
-          {/* Ratings & Shop Metadata */}
+          {/* 2. UPDATED: Etsy-Style Ratings, Sales Count & Shop Metadata */}
           <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-slate-500">
             <div className="flex items-center gap-1">
               <Star
@@ -171,6 +154,13 @@ export default function ProductCard({ product, onAddToCart }) {
                 ({ratingCount.toLocaleString()})
               </span>
             </div>
+
+            <span className="text-slate-300">•</span>
+
+            {/* Sales Count display */}
+            <span className="font-medium text-slate-700">
+              {salesCount.toLocaleString()} sales
+            </span>
 
             <span className="text-slate-300">•</span>
 

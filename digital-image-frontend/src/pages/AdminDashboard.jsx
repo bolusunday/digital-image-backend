@@ -16,7 +16,7 @@ import {
   DollarSign,
   FileText,
 } from "lucide-react";
-import { API_URL } from "../../config";
+import { API_URL } from "../config";
 
 const CATEGORY_OPTIONS = [
   { name: "Cottage Core", value: "cottagecore" },

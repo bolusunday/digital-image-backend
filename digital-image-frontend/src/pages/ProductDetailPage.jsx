@@ -7,6 +7,8 @@ import {
   Star,
   ShieldCheck,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 import { API_URL } from "../config";
@@ -249,7 +251,7 @@ export default function ProductDetailPage({ onAddToCart }) {
   const [product, setProduct] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
   const reviewsRef = useRef(null);
 
@@ -291,12 +293,10 @@ export default function ProductDetailPage({ onAddToCart }) {
     return images.length > 0 ? images : ["https://via.placeholder.com/600x450"];
   }, [product]);
 
-  // Set default selected image on product load
+  // Reset selected image index when product ID changes
   useEffect(() => {
-    if (galleryImages.length > 0) {
-      setSelectedImage(galleryImages[0]);
-    }
-  }, [galleryImages]);
+    setSelectedIndex(0);
+  }, [id]);
 
   if (loading) {
     return (
@@ -330,7 +330,6 @@ export default function ProductDetailPage({ onAddToCart }) {
   const ratingCount = Number(product.rating_count || 0);
   const priceInDollars = Number(product.price || 0) / 100;
 
-  // Safe checks if category equals ebook, e book, or e-book
   const isEbook =
     (product.category || "").toLowerCase().replace(/[^a-z]/g, "") === "ebook";
 
@@ -338,7 +337,21 @@ export default function ProductDetailPage({ onAddToCart }) {
     (rev) => rev && (rev.id || rev.comment || rev.user_name),
   );
 
-  const activeImageSrc = selectedImage || galleryImages[0];
+  // Guard against out-of-bounds indices safely
+  const safeIndex = selectedIndex < galleryImages.length ? selectedIndex : 0;
+  const activeImageSrc = galleryImages[safeIndex];
+
+  const handlePrevImage = () => {
+    setSelectedIndex((prev) =>
+      prev === 0 ? galleryImages.length - 1 : prev - 1,
+    );
+  };
+
+  const handleNextImage = () => {
+    setSelectedIndex((prev) =>
+      prev === galleryImages.length - 1 ? 0 : prev + 1,
+    );
+  };
 
   return (
     <div className="min-h-screen bg-slate-50/60 py-4 sm:py-8 px-3 sm:px-6 lg:px-8 pb-24 md:pb-8">
@@ -354,39 +367,65 @@ export default function ProductDetailPage({ onAddToCart }) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-10 bg-white p-4 sm:p-8 lg:p-10 rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-xs">
-          {/* Main Image & Gallery Strip */}
-          <div className="md:col-span-1 lg:col-span-7 space-y-3">
-            <div className="aspect-square sm:aspect-[4/3] bg-slate-100/80 rounded-xl sm:rounded-2xl overflow-hidden border border-slate-200/80 shadow-inner flex items-center justify-center p-3 sm:p-4">
-              <img
-                src={activeImageSrc}
-                alt={product.title}
-                className="max-w-full max-h-full w-auto h-auto object-contain transition-all duration-300 hover:scale-[1.02]"
-              />
-            </div>
-
-            {/* Gallery Thumbnails Selection */}
+          {/* Etsy-Style Product Gallery */}
+          <div className="md:col-span-1 lg:col-span-7 flex flex-col-reverse md:flex-row gap-3">
             {galleryImages.length > 1 && (
-              <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-1 scrollbar-none">
+              <div className="flex md:flex-col gap-2.5 overflow-x-auto md:overflow-y-auto max-h-[520px] scrollbar-none py-1 md:py-0 md:pr-1 flex-shrink-0">
                 {galleryImages.map((img, idx) => (
                   <button
                     key={idx}
                     type="button"
-                    onClick={() => setSelectedImage(img)}
-                    className={`relative flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border-2 p-1 bg-slate-50 transition-all cursor-pointer ${
-                      activeImageSrc === img
-                        ? "border-indigo-600 ring-2 ring-indigo-500/20 opacity-100"
-                        : "border-slate-200 opacity-60 hover:opacity-100"
+                    onClick={() => setSelectedIndex(idx)}
+                    className={`relative w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden border-2 p-1 bg-white transition-all cursor-pointer flex-shrink-0 ${
+                      safeIndex === idx
+                        ? "border-slate-900 ring-2 ring-slate-900/10 shadow-sm"
+                        : "border-slate-200/80 opacity-60 hover:opacity-100 hover:border-slate-400"
                     }`}
                   >
                     <img
                       src={img}
                       alt={`${product.title} gallery thumbnail ${idx + 1}`}
-                      className="w-full h-full object-contain"
+                      className="w-full h-full object-contain rounded-lg"
                     />
                   </button>
                 ))}
               </div>
             )}
+
+            <div className="relative flex-1 aspect-square sm:aspect-[4/3] bg-slate-100/70 rounded-2xl overflow-hidden border border-slate-200/80 shadow-inner flex items-center justify-center p-4 group">
+              <img
+                src={activeImageSrc}
+                alt={product.title}
+                className="max-w-full max-h-full w-auto h-auto object-contain transition-transform duration-300 group-hover:scale-105"
+              />
+
+              {galleryImages.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={handlePrevImage}
+                    aria-label="Previous Image"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/90 hover:bg-white text-slate-800 shadow-md flex items-center justify-center border border-slate-200/60 opacity-90 md:opacity-0 md:group-hover:opacity-100 transition-all cursor-pointer hover:scale-105 active:scale-95"
+                  >
+                    <ChevronLeft size={20} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleNextImage}
+                    aria-label="Next Image"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/90 hover:bg-white text-slate-800 shadow-md flex items-center justify-center border border-slate-200/60 opacity-90 md:opacity-0 md:group-hover:opacity-100 transition-all cursor-pointer hover:scale-105 active:scale-95"
+                  >
+                    <ChevronRight size={20} />
+                  </button>
+                </>
+              )}
+
+              {galleryImages.length > 1 && (
+                <span className="absolute bottom-3 right-3 text-[11px] font-bold text-slate-700 bg-white/90 backdrop-blur-xs px-2.5 py-1 rounded-full border border-slate-200/80 shadow-xs tracking-wider">
+                  {safeIndex + 1} / {galleryImages.length}
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="md:col-span-1 lg:col-span-5 flex flex-col justify-between">
