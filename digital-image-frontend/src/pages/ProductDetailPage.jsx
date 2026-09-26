@@ -9,6 +9,9 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  Heart,
+  X,
+  Maximize2,
 } from "lucide-react";
 
 import { API_URL } from "../config";
@@ -74,7 +77,6 @@ function WriteGuestReviewSection({ productId, onReviewAdded }) {
 
         if (onReviewAdded) onReviewAdded(review, stats);
 
-        // Reset form inputs
         setOrderId("");
         setEmail("");
         setDisplayName("");
@@ -252,8 +254,14 @@ export default function ProductDetailPage({ onAddToCart }) {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+
+  // Swipe gesture tracking state
+  const [touchStartX, setTouchStartX] = useState(null);
 
   const reviewsRef = useRef(null);
+  const thumbnailRefs = useRef([]);
 
   useEffect(() => {
     setLoading(true);
@@ -275,7 +283,6 @@ export default function ProductDetailPage({ onAddToCart }) {
     );
   }, [id]);
 
-  // Consolidate main thumbnail and gallery images into a single unique array
   const galleryImages = useMemo(() => {
     if (!product) return [];
     const images = [];
@@ -293,10 +300,20 @@ export default function ProductDetailPage({ onAddToCart }) {
     return images.length > 0 ? images : ["https://via.placeholder.com/600x450"];
   }, [product]);
 
-  // Reset selected image index when product ID changes
   useEffect(() => {
     setSelectedIndex(0);
   }, [id]);
+
+  // Auto-scroll active thumbnail into view
+  useEffect(() => {
+    if (thumbnailRefs.current[selectedIndex]) {
+      thumbnailRefs.current[selectedIndex].scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+        inline: "center",
+      });
+    }
+  }, [selectedIndex]);
 
   if (loading) {
     return (
@@ -337,20 +354,39 @@ export default function ProductDetailPage({ onAddToCart }) {
     (rev) => rev && (rev.id || rev.comment || rev.user_name),
   );
 
-  // Guard against out-of-bounds indices safely
   const safeIndex = selectedIndex < galleryImages.length ? selectedIndex : 0;
   const activeImageSrc = galleryImages[safeIndex];
 
-  const handlePrevImage = () => {
+  const handlePrevImage = (e) => {
+    if (e) e.stopPropagation();
     setSelectedIndex((prev) =>
       prev === 0 ? galleryImages.length - 1 : prev - 1,
     );
   };
 
-  const handleNextImage = () => {
+  const handleNextImage = (e) => {
+    if (e) e.stopPropagation();
     setSelectedIndex((prev) =>
       prev === galleryImages.length - 1 ? 0 : prev + 1,
     );
+  };
+
+  // Mobile Touch Swipe Logic
+  const handleTouchStart = (e) => {
+    setTouchStartX(e.touches[0].clientX);
+  };
+
+  const handleTouchEnd = (e) => {
+    if (!touchStartX) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const diff = touchStartX - touchEndX;
+
+    if (diff > 50) {
+      handleNextImage(); // Swiped left
+    } else if (diff < -50) {
+      handlePrevImage(); // Swiped right
+    }
+    setTouchStartX(null);
   };
 
   return (
@@ -366,19 +402,22 @@ export default function ProductDetailPage({ onAddToCart }) {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-10 bg-white p-4 sm:p-8 lg:p-10 rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-xs">
-          {/* Etsy-Style Product Gallery */}
+        {/* Etsy Two-Column Grid with Sticky Right Column */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-10 items-start">
+          {/* LEFT: Etsy Image Gallery */}
           <div className="md:col-span-1 lg:col-span-7 flex flex-col-reverse md:flex-row gap-3">
+            {/* Gallery Thumbnails */}
             {galleryImages.length > 1 && (
               <div className="flex md:flex-col gap-2.5 overflow-x-auto md:overflow-y-auto max-h-[520px] scrollbar-none py-1 md:py-0 md:pr-1 flex-shrink-0">
                 {galleryImages.map((img, idx) => (
                   <button
                     key={idx}
+                    ref={(el) => (thumbnailRefs.current[idx] = el)}
                     type="button"
                     onClick={() => setSelectedIndex(idx)}
                     className={`relative w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden border-2 p-1 bg-white transition-all cursor-pointer flex-shrink-0 ${
                       safeIndex === idx
-                        ? "border-slate-900 ring-2 ring-slate-900/10 shadow-sm"
+                        ? "border-slate-900 ring-2 ring-slate-900/10 shadow-sm opacity-100"
                         : "border-slate-200/80 opacity-60 hover:opacity-100 hover:border-slate-400"
                     }`}
                   >
@@ -392,20 +431,53 @@ export default function ProductDetailPage({ onAddToCart }) {
               </div>
             )}
 
-            <div className="relative flex-1 aspect-square sm:aspect-[4/3] bg-slate-100/70 rounded-2xl overflow-hidden border border-slate-200/80 shadow-inner flex items-center justify-center p-4 group">
+            {/* Main Interactive Stage */}
+            <div
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
+              onClick={() => setIsLightboxOpen(true)}
+              className="relative flex-1 aspect-square sm:aspect-[4/3] bg-white rounded-2xl sm:rounded-3xl overflow-hidden border border-slate-200/90 shadow-sm flex items-center justify-center p-4 group cursor-zoom-in"
+            >
               <img
                 src={activeImageSrc}
                 alt={product.title}
                 className="max-w-full max-h-full w-auto h-auto object-contain transition-transform duration-300 group-hover:scale-105"
               />
 
+              {/* Heart Favorite Overlay */}
+              <button
+                type="button"
+                aria-label="Save to Favorites"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsFavorited(!isFavorited);
+                }}
+                className="absolute top-3 right-3 w-10 h-10 rounded-full bg-white/90 backdrop-blur-xs hover:bg-white text-slate-700 shadow-md flex items-center justify-center border border-slate-200/60 transition-all cursor-pointer hover:scale-110 active:scale-95 z-10"
+              >
+                <Heart
+                  size={18}
+                  className={
+                    isFavorited
+                      ? "fill-rose-500 text-rose-500"
+                      : "text-slate-600"
+                  }
+                />
+              </button>
+
+              {/* Expand Lightbox Hint */}
+              <div className="absolute top-3 left-3 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900/70 text-white p-2 rounded-xl backdrop-blur-xs text-xs font-medium flex items-center gap-1.5 pointer-events-none">
+                <Maximize2 size={13} />
+                <span>Zoom</span>
+              </div>
+
+              {/* Chevrons Navigation Controls */}
               {galleryImages.length > 1 && (
                 <>
                   <button
                     type="button"
                     onClick={handlePrevImage}
                     aria-label="Previous Image"
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/90 hover:bg-white text-slate-800 shadow-md flex items-center justify-center border border-slate-200/60 opacity-90 md:opacity-0 md:group-hover:opacity-100 transition-all cursor-pointer hover:scale-105 active:scale-95"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/90 hover:bg-white text-slate-800 shadow-md flex items-center justify-center border border-slate-200/60 opacity-90 md:opacity-0 md:group-hover:opacity-100 transition-all cursor-pointer hover:scale-105 active:scale-95 z-10"
                   >
                     <ChevronLeft size={20} />
                   </button>
@@ -413,13 +485,14 @@ export default function ProductDetailPage({ onAddToCart }) {
                     type="button"
                     onClick={handleNextImage}
                     aria-label="Next Image"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/90 hover:bg-white text-slate-800 shadow-md flex items-center justify-center border border-slate-200/60 opacity-90 md:opacity-0 md:group-hover:opacity-100 transition-all cursor-pointer hover:scale-105 active:scale-95"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/90 hover:bg-white text-slate-800 shadow-md flex items-center justify-center border border-slate-200/60 opacity-90 md:opacity-0 md:group-hover:opacity-100 transition-all cursor-pointer hover:scale-105 active:scale-95 z-10"
                   >
                     <ChevronRight size={20} />
                   </button>
                 </>
               )}
 
+              {/* Image Counter Badge */}
               {galleryImages.length > 1 && (
                 <span className="absolute bottom-3 right-3 text-[11px] font-bold text-slate-700 bg-white/90 backdrop-blur-xs px-2.5 py-1 rounded-full border border-slate-200/80 shadow-xs tracking-wider">
                   {safeIndex + 1} / {galleryImages.length}
@@ -428,52 +501,52 @@ export default function ProductDetailPage({ onAddToCart }) {
             </div>
           </div>
 
-          <div className="md:col-span-1 lg:col-span-5 flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between text-xs text-slate-500 mb-2">
-                <span className="font-extrabold uppercase tracking-wider text-indigo-600 text-[10px] sm:text-[11px]">
-                  {isEbook ? "Pegty Library" : "Pegty Studio"}
-                </span>
-                <button
-                  onClick={() =>
-                    reviewsRef.current?.scrollIntoView({ behavior: "smooth" })
-                  }
-                  className="hover:text-indigo-600 font-bold text-slate-700 cursor-pointer flex items-center gap-1 transition-colors"
-                >
-                  <Star size={14} className="fill-amber-400 text-amber-400" />
-                  <span>{ratingAverage.toFixed(1)}</span>
-                  <span className="text-slate-400">({ratingCount})</span>
-                </button>
-              </div>
-
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-slate-900 tracking-tight mb-2 sm:mb-4">
-                {product.title}
-              </h1>
-
-              <div className="text-2xl sm:text-3xl font-black text-slate-900 mb-4 sm:mb-6">
-                ${priceInDollars.toFixed(2)}
-              </div>
-
+          {/* RIGHT: Etsy Sticky Buy Section */}
+          <div className="md:col-span-1 lg:col-span-5 bg-white p-5 sm:p-8 rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-xs md:sticky md:top-6">
+            <div className="flex items-center justify-between text-xs text-slate-500 mb-2">
+              <span className="font-extrabold uppercase tracking-wider text-indigo-600 text-[10px] sm:text-[11px]">
+                {isEbook ? "Pegty Library" : "Pegty Studio"}
+              </span>
               <button
-                onClick={() => onAddToCart && onAddToCart(product)}
-                className="w-full py-3.5 px-6 bg-slate-900 hover:bg-indigo-600 text-white font-bold text-xs sm:text-sm rounded-xl transition-all duration-200 mb-6 cursor-pointer flex items-center justify-center gap-2 shadow-md hover:shadow-indigo-500/20"
+                onClick={() =>
+                  reviewsRef.current?.scrollIntoView({ behavior: "smooth" })
+                }
+                className="hover:text-indigo-600 font-bold text-slate-700 cursor-pointer flex items-center gap-1 transition-colors"
               >
-                <ShoppingBag size={18} />
-                Add to Cart
+                <Star size={14} className="fill-amber-400 text-amber-400" />
+                <span>{ratingAverage.toFixed(1)}</span>
+                <span className="text-slate-400">({ratingCount})</span>
               </button>
+            </div>
 
-              <div className="border-t border-slate-100 pt-4 sm:pt-6">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 mb-2">
-                  Description
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed whitespace-pre-line font-normal">
-                  {product.description || "No description provided."}
-                </p>
-              </div>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-slate-900 tracking-tight mb-2 sm:mb-4">
+              {product.title}
+            </h1>
+
+            <div className="text-2xl sm:text-3xl font-black text-slate-900 mb-4 sm:mb-6">
+              ${priceInDollars.toFixed(2)}
+            </div>
+
+            <button
+              onClick={() => onAddToCart && onAddToCart(product)}
+              className="w-full py-3.5 px-6 bg-slate-900 hover:bg-indigo-600 text-white font-bold text-xs sm:text-sm rounded-xl transition-all duration-200 mb-6 cursor-pointer flex items-center justify-center gap-2 shadow-md hover:shadow-indigo-500/20"
+            >
+              <ShoppingBag size={18} />
+              Add to Cart
+            </button>
+
+            <div className="border-t border-slate-100 pt-4 sm:pt-6">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 mb-2">
+                Description
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed whitespace-pre-line font-normal">
+                {product.description || "No description provided."}
+              </p>
             </div>
           </div>
         </div>
 
+        {/* REVIEWS SECTION */}
         <div
           ref={reviewsRef}
           className="bg-white p-4 sm:p-8 lg:p-10 rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-xs"
@@ -543,7 +616,49 @@ export default function ProductDetailPage({ onAddToCart }) {
         </div>
       </div>
 
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 p-3 shadow-lg z-50 flex items-center justify-between gap-3">
+      {/* FULLSCREEN LIGHTBOX MODAL */}
+      {isLightboxOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+          <button
+            type="button"
+            aria-label="Close modal"
+            onClick={() => setIsLightboxOpen(false)}
+            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all cursor-pointer z-50"
+          >
+            <X size={22} />
+          </button>
+
+          <div className="relative max-w-5xl max-h-[85vh] w-full h-full flex items-center justify-center">
+            <img
+              src={activeImageSrc}
+              alt={product.title}
+              className="max-w-full max-h-full object-contain rounded-lg"
+            />
+
+            {galleryImages.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={handlePrevImage}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/20 hover:bg-white text-white hover:text-slate-900 flex items-center justify-center transition-all cursor-pointer"
+                >
+                  <ChevronLeft size={28} />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextImage}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/20 hover:bg-white text-white hover:text-slate-900 flex items-center justify-center transition-all cursor-pointer"
+                >
+                  <ChevronRight size={28} />
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* MOBILE STICKY BAR */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 p-3 shadow-lg z-40 flex items-center justify-between gap-3">
         <div>
           <span className="block text-[10px] uppercase font-extrabold tracking-wider text-slate-400">
             Total Price
