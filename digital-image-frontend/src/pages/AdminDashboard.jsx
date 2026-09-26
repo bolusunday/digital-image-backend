@@ -62,7 +62,7 @@ function EditProductModal({
         title: product.title || "",
         description: product.description || "",
         price: product.price ? (Number(product.price) / 100).toString() : "0",
-        category: (product.category || "sport").toLowerCase().trim(),
+        category: (product.category || "cottage core").toLowerCase().trim(),
         public_thumb_url: product.public_thumb_url || "",
         images: existingImages,
       });
