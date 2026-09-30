@@ -44,7 +44,6 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (mobile apps, curl, Postman) or matched allowed origins
       if (!origin || allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
@@ -56,7 +55,7 @@ app.use(
   }),
 );
 
-// --------------- Stripe Webhook Listener (Supports both endpoint paths) ---------------
+// --------------- Stripe Webhook Listener ---------------
 app.post(
   ["/api/stripe/webhook", "/api/webhook"],
   express.raw({ type: "application/json" }),
@@ -185,6 +184,69 @@ app.get("/api/health", (req, res) => {
   res
     .status(200)
     .json({ status: "OK", domain: "pegty.com", timestamp: new Date() });
+});
+
+// --------------- SEO: Sitemap & Robots.txt Routes ---------------
+app.get("/robots.txt", (req, res) => {
+  res.type("text/plain");
+  res.send(`User-agent: *
+Allow: /
+
+Sitemap: https://pegty.com/sitemap.xml`);
+});
+
+app.get("/sitemap.xml", async (req, res) => {
+  try {
+    const { rows: products } = await pool.query(
+      "SELECT id, created_at FROM products ORDER BY id DESC",
+    );
+
+    const baseUrl = "https://pegty.com";
+
+    const staticPages = ["", "/catalog"]
+      .map(
+        (route) => `
+  <url>
+    <loc>${baseUrl}${route}</loc>
+    <changefreq>daily</changefreq>
+    <priority>${route === "" ? "1.0" : "0.8"}</priority>
+  </url>`,
+      )
+      .join("");
+
+    const getValidDate = (dateVal) => {
+      const parsed = new Date(dateVal);
+      return !isNaN(parsed.getTime())
+        ? parsed.toISOString().split("T")[0]
+        : new Date().toISOString().split("T")[0];
+    };
+
+    const productPages = products
+      .map((product) => {
+        const lastModDate = getValidDate(product.created_at);
+
+        return `
+  <url>
+    <loc>${baseUrl}/product/${product.id}</loc>
+    <lastmod>${lastModDate}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>`;
+      })
+      .join("");
+
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${staticPages}
+${productPages}
+</urlset>`;
+
+    res.header("Content-Type", "application/xml");
+    res.status(200).send(xml.trim());
+  } catch (error) {
+    console.error("❌ Error generating sitemap:", error.message);
+    res.status(500).end();
+  }
 });
 
 // Mount Modular Routes
