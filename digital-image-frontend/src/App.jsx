@@ -92,10 +92,10 @@ function Home({ products, isLoading, onAddToCart }) {
 
           {!currentCategory && !searchQuery && (
             <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium leading-relaxed">
-              Discover our high-quality, unique and ready-to-use images in
+              Discover our premium quality, unique and ready-to-use images in
               categories of Cottage Core, Dark Cottage Core, Rustik & Gothic,
               Vintage Photography, Winter & Christmas, Modern & Classic Wall
-              Arts and Black Arts.
+              Arts and Black Arts
             </p>
           )}
         </div>
