@@ -1,6 +1,8 @@
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
+  RewriteRule ^sitemap\.xml$ https://api.pegty.com/sitemap.xml [R=301,L]
+  RewriteRule ^robots\.txt$ https://api.pegty.com/robots.txt [R=301,L]
   RewriteRule ^index\.html$ - [L]
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
