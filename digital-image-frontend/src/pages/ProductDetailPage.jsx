@@ -352,7 +352,6 @@ export default function ProductDetailPage({ onAddToCart }) {
     [galleryImages.length],
   );
 
-  // Keyboard controls for Lightbox
   useEffect(() => {
     if (!isLightboxOpen) return;
 
@@ -365,6 +364,161 @@ export default function ProductDetailPage({ onAddToCart }) {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isLightboxOpen, handlePrevImage, handleNextImage]);
+
+  const ratingAverage = Number(product?.rating_average || 0);
+  const ratingCount = Number(product?.rating_count || 0);
+  const priceInDollars = Number(product?.price || 0) / 100;
+
+  const rawCategory = String(product?.category || "")
+    .toLowerCase()
+    .trim();
+  const formattedCategory = rawCategory
+    ? rawCategory.replace(/-/g, " ")
+    : "digital download";
+
+  const isEbook =
+    rawCategory === "ebook" ||
+    rawCategory === "e-book" ||
+    rawCategory === "e book" ||
+    rawCategory === "e-books";
+
+  const productTitle = product?.title || "Digital Download";
+  const mainSeoAltText = `${productTitle} - ${formattedCategory} Printable Art`;
+
+  const validReviews = useMemo(
+    () =>
+      (Array.isArray(reviews) ? reviews : []).filter(
+        (rev) => rev && (rev.id || rev.comment || rev.user_name),
+      ),
+    [reviews],
+  );
+
+  // ----------------------------------------------------------------------
+  // DIGITAL PRODUCT SCHEMA.ORG JSON-LD GENERATOR
+  // ----------------------------------------------------------------------
+  const jsonLd = useMemo(() => {
+    if (!product) return null;
+
+    const siteBaseUrl = process.env.REACT_APP_SITE_URL || "https://pegty.com";
+    const canonicalUrl =
+      typeof window !== "undefined" && window.location.origin
+        ? `${window.location.origin}/products/${id}`
+        : `${siteBaseUrl}/products/${id}`;
+
+    const nextYear = new Date().getFullYear() + 1;
+
+    // Dual-typing handles digital product nuances for Search Engines
+    const schemaType = isEbook
+      ? ["Product", "EBook"]
+      : ["Product", "DigitalDocument"];
+
+    const schema = {
+      "@context": "https://schema.org",
+      "@type": schemaType,
+      name: productTitle,
+      image: galleryImages,
+      description: product.description || `${productTitle} digital download.`,
+      category: formattedCategory || "Digital Goods",
+      sku: String(product.sku || product.id || id),
+      mpn: String(product.id || id),
+      fileFormat:
+        product.fileFormat || (isEbook ? "application/pdf" : "application/zip"),
+      brand: {
+        "@type": "Brand",
+        name: isEbook ? "Pegty Library" : "Pegty Studio",
+      },
+      offers: {
+        "@type": "Offer",
+        price: priceInDollars.toFixed(2),
+        priceCurrency: "USD",
+        priceValidUntil: `${nextYear}-12-31`,
+        availability: "https://schema.org/InStock",
+        itemCondition: "https://schema.org/NewCondition",
+        url: canonicalUrl,
+        seller: {
+          "@type": "Organization",
+          name: "Pegty Studio",
+        },
+        // Free instant digital fulfillment rule
+        shippingDetails: {
+          "@type": "OfferShippingDetails",
+          shippingRate: {
+            "@type": "MonetaryAmount",
+            value: "0.00",
+            currency: "USD",
+          },
+          shippingDestination: {
+            "@type": "DefinedRegion",
+            addressCountry: "US",
+          },
+          deliveryTime: {
+            "@type": "ShippingDeliveryTime",
+            handlingTime: {
+              "@type": "QuantitativeValue",
+              minValue: 0,
+              maxValue: 0,
+              unitCode: "DAY",
+            },
+            transitTime: {
+              "@type": "QuantitativeValue",
+              minValue: 0,
+              maxValue: 0,
+              unitCode: "DAY",
+            },
+          },
+        },
+        // Standard digital download return policy
+        hasMerchantReturnPolicy: {
+          "@type": "MerchantReturnPolicy",
+          applicableCountry: "US",
+          returnPolicyCategory: "https://schema.org/MerchantReturnNotPermitted",
+        },
+      },
+    };
+
+    if (ratingCount > 0) {
+      schema.aggregateRating = {
+        "@type": "AggregateRating",
+        ratingValue: ratingAverage.toFixed(1),
+        reviewCount: ratingCount,
+        bestRating: "5",
+        worstRating: "1",
+      };
+    }
+
+    if (validReviews.length > 0) {
+      schema.review = validReviews.map((rev) => ({
+        "@type": "Review",
+        author: {
+          "@type": "Person",
+          name: rev.user_name || rev.displayName || "Verified Buyer",
+        },
+        reviewRating: {
+          "@type": "Rating",
+          ratingValue: Number(rev.rating || 5).toString(),
+          bestRating: "5",
+          worstRating: "1",
+        },
+        ...(rev.comment ? { reviewBody: rev.comment } : {}),
+        datePublished: rev.created_at
+          ? new Date(rev.created_at).toISOString().split("T")[0]
+          : new Date().toISOString().split("T")[0],
+      }));
+    }
+
+    return schema;
+  }, [
+    product,
+    id,
+    productTitle,
+    galleryImages,
+    formattedCategory,
+    isEbook,
+    priceInDollars,
+    ratingAverage,
+    ratingCount,
+    validReviews,
+  ]);
 
   if (loading) {
     return (
@@ -394,30 +548,6 @@ export default function ProductDetailPage({ onAddToCart }) {
     );
   }
 
-  const ratingAverage = Number(product.rating_average || 0);
-  const ratingCount = Number(product.rating_count || 0);
-  const priceInDollars = Number(product.price || 0) / 100;
-
-  const rawCategory = String(product.category || "")
-    .toLowerCase()
-    .trim();
-  const formattedCategory = rawCategory
-    ? rawCategory.replace(/-/g, " ")
-    : "digital download";
-
-  const isEbook =
-    rawCategory === "ebook" ||
-    rawCategory === "e-book" ||
-    rawCategory === "e book" ||
-    rawCategory === "e-books";
-
-  const productTitle = product.title || "Digital Print";
-  const mainSeoAltText = `${productTitle} - ${formattedCategory} Printable Art`;
-
-  const validReviews = (Array.isArray(reviews) ? reviews : []).filter(
-    (rev) => rev && (rev.id || rev.comment || rev.user_name),
-  );
-
   const safeIndex = selectedIndex < galleryImages.length ? selectedIndex : 0;
   const activeImageSrc = galleryImages[safeIndex];
 
@@ -440,6 +570,14 @@ export default function ProductDetailPage({ onAddToCart }) {
 
   return (
     <div className="min-h-screen bg-slate-50/60 py-4 sm:py-8 px-3 sm:px-6 lg:px-8 pb-24 md:pb-8">
+      {/* Dynamic Digital Product JSON-LD Injection */}
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      )}
+
       <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
         <div>
           <Link

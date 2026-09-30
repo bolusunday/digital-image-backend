@@ -191,6 +191,11 @@ app.get("/robots.txt", (req, res) => {
   res.type("text/plain");
   res.send(`User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /login
+Disallow: /cart
+Disallow: /success
+Disallow: /api/
 
 Sitemap: https://pegty.com/sitemap.xml`);
 });
@@ -198,18 +203,42 @@ Sitemap: https://pegty.com/sitemap.xml`);
 app.get("/sitemap.xml", async (req, res) => {
   try {
     const { rows: products } = await pool.query(
-      "SELECT id, created_at FROM products ORDER BY id DESC",
+      "SELECT id, title, public_thumb_url, created_at FROM products ORDER BY id DESC",
     );
 
     const baseUrl = "https://pegty.com";
 
-    const staticPages = ["", "/catalog"]
+    // Static core pages
+    const staticPages = [""]
       .map(
         (route) => `
   <url>
     <loc>${baseUrl}${route}</loc>
     <changefreq>daily</changefreq>
-    <priority>${route === "" ? "1.0" : "0.8"}</priority>
+    <priority>1.0</priority>
+  </url>`,
+      )
+      .join("");
+
+    // Category listing pages
+    const categories = [
+      "cottagecore",
+      "darkcottagecore",
+      "rustikandgothic",
+      "vintagephotography",
+      "modernandclassicwallarts",
+      "seasonal",
+      "blackarts",
+      "ebook",
+    ];
+
+    const categoryPages = categories
+      .map(
+        (cat) => `
+  <url>
+    <loc>${baseUrl}/category/${cat}</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
   </url>`,
       )
       .join("");
@@ -221,23 +250,33 @@ app.get("/sitemap.xml", async (req, res) => {
         : new Date().toISOString().split("T")[0];
     };
 
+    // Product pages with Google Image Search extension
     const productPages = products
       .map((product) => {
         const lastModDate = getValidDate(product.created_at);
+        const imageTag = product.public_thumb_url
+          ? `
+    <image:image>
+      <image:loc>${product.public_thumb_url}</image:loc>
+      <image:title>${product.title ? product.title.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : "Digital Product"}</image:title>
+    </image:image>`
+          : "";
 
         return `
   <url>
     <loc>${baseUrl}/product/${product.id}</loc>
     <lastmod>${lastModDate}</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.7</priority>${imageTag}
   </url>`;
       })
       .join("");
 
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
 ${staticPages}
+${categoryPages}
 ${productPages}
 </urlset>`;
 

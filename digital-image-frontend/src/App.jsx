@@ -1,5 +1,5 @@
 // src/App.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   BrowserRouter,
   Routes,
@@ -169,6 +169,32 @@ export default function App() {
     }
   });
 
+  // Global Brand & WebSite Structured Data
+  const globalSchema = useMemo(() => {
+    const baseUrl = process.env.REACT_APP_SITE_URL || "https://pegty.com";
+    return [
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        name: "Pegty Studio",
+        url: baseUrl,
+        logo: `${baseUrl}/logo.png`,
+        sameAs: ["https://pinterest.com/pegtystudio"],
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        name: "Pegty Studio Digital Store",
+        url: baseUrl,
+        potentialAction: {
+          "@type": "SearchAction",
+          target: `${baseUrl}/?search={search_term_string}`,
+          "query-input": "required name=search_term_string",
+        },
+      },
+    ];
+  }, []);
+
   // Save cart to localStorage whenever cart state changes
   useEffect(() => {
     try {
@@ -227,6 +253,12 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      {/* Global Organization & WebSite JSON-LD */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(globalSchema) }}
+      />
+
       {/* Resets viewport scroll to top on page or category changes */}
       <ScrollToTop />
 
@@ -255,10 +287,17 @@ export default function App() {
                 />
               }
             />
+
+            {/* Supported both singular and plural URL structures for canonical flexibility */}
             <Route
               path="/product/:id"
               element={<ProductDetailPage onAddToCart={handleAddToCart} />}
             />
+            <Route
+              path="/products/:id"
+              element={<ProductDetailPage onAddToCart={handleAddToCart} />}
+            />
+
             <Route
               path="/cart"
               element={
