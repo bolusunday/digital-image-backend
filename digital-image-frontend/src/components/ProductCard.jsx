@@ -1,4 +1,3 @@
-// src/components/ProductCard.jsx
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { ShoppingCart, Star, Check, Heart, Download } from "lucide-react";
@@ -95,6 +94,11 @@ export default function ProductCard({ product, onAddToCart }) {
   const rawCategory = String(product.category || "")
     .toLowerCase()
     .trim();
+
+  const formattedCategory = rawCategory
+    ? rawCategory.replace(/-/g, " ")
+    : "Digital Download";
+
   const isEBook =
     rawCategory === "ebook" ||
     rawCategory === "e-book" ||
@@ -107,6 +111,9 @@ export default function ProductCard({ product, onAddToCart }) {
     product.vendor ||
     (isEBook ? "Pegty Library" : "Pegty Studio");
 
+  // Dynamic SEO Alt Text
+  const seoAltText = `${product.title || "Digital Print"} - ${formattedCategory} Printable Art`;
+
   return (
     <div className="group relative w-full bg-white rounded-2xl border border-slate-200/90 shadow-xs hover:shadow-xl hover:border-slate-300 transition-all duration-300 flex flex-col justify-between h-full overflow-hidden p-3">
       {/* 1. MEDIA CONTAINER */}
@@ -114,7 +121,7 @@ export default function ProductCard({ product, onAddToCart }) {
         <Link to={`/product/${product.id}`} className="block w-full h-full">
           <img
             src={imageUrl}
-            alt={product.title}
+            alt={seoAltText}
             loading="lazy"
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
           />
@@ -140,7 +147,7 @@ export default function ProductCard({ product, onAddToCart }) {
             </h3>
           </Link>
 
-          {/* 2. UPDATED: Etsy-Style Ratings, Sales Count & Shop Metadata */}
+          {/* Etsy-Style Ratings, Sales Count & Shop Metadata */}
           <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-slate-500">
             <div className="flex items-center gap-1">
               <Star

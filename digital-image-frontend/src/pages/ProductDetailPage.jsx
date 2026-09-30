@@ -1,5 +1,11 @@
 // src/pages/ProductDetailPage.jsx
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  useCallback,
+} from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   ShoppingBag,
@@ -102,7 +108,13 @@ function WriteGuestReviewSection({ productId, onReviewAdded }) {
         <h3 className="text-sm font-bold text-emerald-900 mb-1">
           Review Published!
         </h3>
-        <p className="text-xs text-emerald-700">{message}</p>
+        <p className="text-xs text-emerald-700 mb-4">{message}</p>
+        <button
+          onClick={() => setIsSuccess(false)}
+          className="text-xs font-bold text-emerald-800 underline hover:text-emerald-900 cursor-pointer"
+        >
+          Write another review
+        </button>
       </div>
     );
   }
@@ -257,13 +269,13 @@ export default function ProductDetailPage({ onAddToCart }) {
   const [isFavorited, setIsFavorited] = useState(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
-  // Swipe gesture tracking state
   const [touchStartX, setTouchStartX] = useState(null);
 
   const reviewsRef = useRef(null);
   const thumbnailRefs = useRef([]);
 
   useEffect(() => {
+    let isMounted = true;
     setLoading(true);
 
     const fetchProduct = fetch(`${API_URL}/api/products/${id}`)
@@ -276,11 +288,17 @@ export default function ProductDetailPage({ onAddToCart }) {
 
     Promise.all([fetchProduct, fetchReviews]).then(
       ([productData, reviewsData]) => {
-        setProduct(productData);
-        setReviews(Array.isArray(reviewsData) ? reviewsData : []);
-        setLoading(false);
+        if (isMounted) {
+          setProduct(productData);
+          setReviews(Array.isArray(reviewsData) ? reviewsData : []);
+          setLoading(false);
+        }
       },
     );
+
+    return () => {
+      isMounted = false;
+    };
   }, [id]);
 
   const galleryImages = useMemo(() => {
@@ -304,16 +322,49 @@ export default function ProductDetailPage({ onAddToCart }) {
     setSelectedIndex(0);
   }, [id]);
 
-  // Auto-scroll active thumbnail into view
   useEffect(() => {
     if (thumbnailRefs.current[selectedIndex]) {
-      thumbnailRefs.current[selectedIndex].scrollIntoView({
+      thumbnailRefs.current[selectedIndex]?.scrollIntoView({
         behavior: "smooth",
         block: "nearest",
         inline: "center",
       });
     }
   }, [selectedIndex]);
+
+  const handlePrevImage = useCallback(
+    (e) => {
+      if (e) e.stopPropagation();
+      setSelectedIndex((prev) =>
+        prev === 0 ? galleryImages.length - 1 : prev - 1,
+      );
+    },
+    [galleryImages.length],
+  );
+
+  const handleNextImage = useCallback(
+    (e) => {
+      if (e) e.stopPropagation();
+      setSelectedIndex((prev) =>
+        prev === galleryImages.length - 1 ? 0 : prev + 1,
+      );
+    },
+    [galleryImages.length],
+  );
+
+  // Keyboard controls for Lightbox
+  useEffect(() => {
+    if (!isLightboxOpen) return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") setIsLightboxOpen(false);
+      if (e.key === "ArrowLeft") handlePrevImage();
+      if (e.key === "ArrowRight") handleNextImage();
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isLightboxOpen, handlePrevImage, handleNextImage]);
 
   if (loading) {
     return (
@@ -347,8 +398,21 @@ export default function ProductDetailPage({ onAddToCart }) {
   const ratingCount = Number(product.rating_count || 0);
   const priceInDollars = Number(product.price || 0) / 100;
 
+  const rawCategory = String(product.category || "")
+    .toLowerCase()
+    .trim();
+  const formattedCategory = rawCategory
+    ? rawCategory.replace(/-/g, " ")
+    : "digital download";
+
   const isEbook =
-    (product.category || "").toLowerCase().replace(/[^a-z]/g, "") === "ebook";
+    rawCategory === "ebook" ||
+    rawCategory === "e-book" ||
+    rawCategory === "e book" ||
+    rawCategory === "e-books";
+
+  const productTitle = product.title || "Digital Print";
+  const mainSeoAltText = `${productTitle} - ${formattedCategory} Printable Art`;
 
   const validReviews = (Array.isArray(reviews) ? reviews : []).filter(
     (rev) => rev && (rev.id || rev.comment || rev.user_name),
@@ -357,21 +421,6 @@ export default function ProductDetailPage({ onAddToCart }) {
   const safeIndex = selectedIndex < galleryImages.length ? selectedIndex : 0;
   const activeImageSrc = galleryImages[safeIndex];
 
-  const handlePrevImage = (e) => {
-    if (e) e.stopPropagation();
-    setSelectedIndex((prev) =>
-      prev === 0 ? galleryImages.length - 1 : prev - 1,
-    );
-  };
-
-  const handleNextImage = (e) => {
-    if (e) e.stopPropagation();
-    setSelectedIndex((prev) =>
-      prev === galleryImages.length - 1 ? 0 : prev + 1,
-    );
-  };
-
-  // Mobile Touch Swipe Logic
   const handleTouchStart = (e) => {
     setTouchStartX(e.touches[0].clientX);
   };
@@ -382,9 +431,9 @@ export default function ProductDetailPage({ onAddToCart }) {
     const diff = touchStartX - touchEndX;
 
     if (diff > 50) {
-      handleNextImage(); // Swiped left
+      handleNextImage();
     } else if (diff < -50) {
-      handlePrevImage(); // Swiped right
+      handlePrevImage();
     }
     setTouchStartX(null);
   };
@@ -402,11 +451,8 @@ export default function ProductDetailPage({ onAddToCart }) {
           </Link>
         </div>
 
-        {/* Etsy Two-Column Grid with Sticky Right Column */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-10 items-start">
-          {/* LEFT: Etsy Image Gallery */}
           <div className="md:col-span-1 lg:col-span-7 flex flex-col-reverse md:flex-row gap-3">
-            {/* Gallery Thumbnails */}
             {galleryImages.length > 1 && (
               <div className="flex md:flex-col gap-2.5 overflow-x-auto md:overflow-y-auto max-h-[520px] scrollbar-none py-1 md:py-0 md:pr-1 flex-shrink-0">
                 {galleryImages.map((img, idx) => (
@@ -423,7 +469,7 @@ export default function ProductDetailPage({ onAddToCart }) {
                   >
                     <img
                       src={img}
-                      alt={`${product.title} gallery thumbnail ${idx + 1}`}
+                      alt={`${productTitle} - ${formattedCategory} image preview ${idx + 1}`}
                       className="w-full h-full object-contain rounded-lg"
                     />
                   </button>
@@ -431,7 +477,6 @@ export default function ProductDetailPage({ onAddToCart }) {
               </div>
             )}
 
-            {/* Main Interactive Stage */}
             <div
               onTouchStart={handleTouchStart}
               onTouchEnd={handleTouchEnd}
@@ -440,11 +485,10 @@ export default function ProductDetailPage({ onAddToCart }) {
             >
               <img
                 src={activeImageSrc}
-                alt={product.title}
+                alt={`${mainSeoAltText} - View ${safeIndex + 1}`}
                 className="max-w-full max-h-full w-auto h-auto object-contain transition-transform duration-300 group-hover:scale-105"
               />
 
-              {/* Heart Favorite Overlay */}
               <button
                 type="button"
                 aria-label="Save to Favorites"
@@ -464,13 +508,11 @@ export default function ProductDetailPage({ onAddToCart }) {
                 />
               </button>
 
-              {/* Expand Lightbox Hint */}
               <div className="absolute top-3 left-3 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900/70 text-white p-2 rounded-xl backdrop-blur-xs text-xs font-medium flex items-center gap-1.5 pointer-events-none">
                 <Maximize2 size={13} />
                 <span>Zoom</span>
               </div>
 
-              {/* Chevrons Navigation Controls */}
               {galleryImages.length > 1 && (
                 <>
                   <button
@@ -492,7 +534,6 @@ export default function ProductDetailPage({ onAddToCart }) {
                 </>
               )}
 
-              {/* Image Counter Badge */}
               {galleryImages.length > 1 && (
                 <span className="absolute bottom-3 right-3 text-[11px] font-bold text-slate-700 bg-white/90 backdrop-blur-xs px-2.5 py-1 rounded-full border border-slate-200/80 shadow-xs tracking-wider">
                   {safeIndex + 1} / {galleryImages.length}
@@ -501,7 +542,6 @@ export default function ProductDetailPage({ onAddToCart }) {
             </div>
           </div>
 
-          {/* RIGHT: Etsy Sticky Buy Section */}
           <div className="md:col-span-1 lg:col-span-5 bg-white p-5 sm:p-8 rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-xs md:sticky md:top-6">
             <div className="flex items-center justify-between text-xs text-slate-500 mb-2">
               <span className="font-extrabold uppercase tracking-wider text-indigo-600 text-[10px] sm:text-[11px]">
@@ -546,7 +586,6 @@ export default function ProductDetailPage({ onAddToCart }) {
           </div>
         </div>
 
-        {/* REVIEWS SECTION */}
         <div
           ref={reviewsRef}
           className="bg-white p-4 sm:p-8 lg:p-10 rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-xs"
@@ -616,7 +655,6 @@ export default function ProductDetailPage({ onAddToCart }) {
         </div>
       </div>
 
-      {/* FULLSCREEN LIGHTBOX MODAL */}
       {isLightboxOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
           <button
@@ -631,7 +669,7 @@ export default function ProductDetailPage({ onAddToCart }) {
           <div className="relative max-w-5xl max-h-[85vh] w-full h-full flex items-center justify-center">
             <img
               src={activeImageSrc}
-              alt={product.title}
+              alt={`${mainSeoAltText} - Full size view ${safeIndex + 1}`}
               className="max-w-full max-h-full object-contain rounded-lg"
             />
 
@@ -657,7 +695,6 @@ export default function ProductDetailPage({ onAddToCart }) {
         </div>
       )}
 
-      {/* MOBILE STICKY BAR */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 p-3 shadow-lg z-40 flex items-center justify-between gap-3">
         <div>
           <span className="block text-[10px] uppercase font-extrabold tracking-wider text-slate-400">
