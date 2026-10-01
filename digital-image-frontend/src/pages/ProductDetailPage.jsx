@@ -551,7 +551,7 @@ export default function ProductDetailPage({ onAddToCart }) {
       <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 text-center px-4">
         <Helmet>
           <title>Product Not Found | Pegty Studio</title>
-          <meta name="robots" content="noindex" />
+          <meta name="robots" content="index" />
         </Helmet>
         <h2 className="text-lg sm:text-xl font-bold text-slate-900">
           Product not found
