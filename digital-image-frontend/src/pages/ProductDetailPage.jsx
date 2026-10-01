@@ -425,7 +425,6 @@ export default function ProductDetailPage({ onAddToCart }) {
 
     const nextYear = new Date().getFullYear() + 1;
 
-    // Dual-typing handles digital product nuances for Search Engines
     const schemaType = isEbook
       ? ["Product", "EBook"]
       : ["Product", "DigitalDocument"];
@@ -457,7 +456,6 @@ export default function ProductDetailPage({ onAddToCart }) {
           "@type": "Organization",
           name: "Pegty Studio",
         },
-        // Free instant digital fulfillment rule
         shippingDetails: {
           "@type": "OfferShippingDetails",
           shippingRate: {
@@ -485,7 +483,6 @@ export default function ProductDetailPage({ onAddToCart }) {
             },
           },
         },
-        // Standard digital download return policy
         hasMerchantReturnPolicy: {
           "@type": "MerchantReturnPolicy",
           applicableCountry: "US",
@@ -538,20 +535,26 @@ export default function ProductDetailPage({ onAddToCart }) {
     validReviews,
   ]);
 
+  // 1. Loading state: Neutral SEO directive while fetching data
   if (loading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center text-slate-500 font-medium text-xs sm:text-sm">
+        <Helmet>
+          <title>Loading... | Pegty Studio</title>
+          <meta name="robots" content="index, follow" />
+        </Helmet>
         Loading digital asset details...
       </div>
     );
   }
 
-  if (!product) {
+  // 2. Verified Missing Product State: Only noindex when loading is complete AND product is null
+  if (!loading && !product) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 text-center px-4">
         <Helmet>
           <title>Product Not Found | Pegty Studio</title>
-          <meta name="robots" content="index" />
+          <meta name="robots" content="noindex, follow" />
         </Helmet>
         <h2 className="text-lg sm:text-xl font-bold text-slate-900">
           Product not found
@@ -592,11 +595,12 @@ export default function ProductDetailPage({ onAddToCart }) {
 
   return (
     <div className="min-h-screen bg-slate-50/60 py-4 sm:py-8 px-3 sm:px-6 lg:px-8 pb-24 md:pb-8">
-      {/* Dynamic OpenGraph & Meta Tags */}
+      {/* 3. Dynamic OpenGraph & Meta Tags for Valid Product */}
       <Helmet>
         {/* Primary Meta Tags */}
         <title>{metaTitle}</title>
         <meta name="description" content={metaDescription} />
+        <meta name="robots" content="index, follow, max-image-preview:large" />
         <link rel="canonical" href={canonicalUrl} />
 
         {/* Open Graph / Facebook / WhatsApp */}
