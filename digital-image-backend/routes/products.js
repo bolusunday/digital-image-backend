@@ -28,6 +28,7 @@ const upload = multer({
       cb(null, process.env.AWS_BUCKET_NAME);
     },
     contentType: multerS3.AUTO_CONTENT_TYPE,
+    contentDisposition: "inline",
     metadata: (req, file, cb) => {
       cb(null, { fieldName: file.fieldname });
     },
