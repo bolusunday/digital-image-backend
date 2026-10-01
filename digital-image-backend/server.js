@@ -557,16 +557,23 @@ app.put("/api/admin/products/:id", async (req, res) => {
   }
 });
 
-// --------------- Reviews API Routes ---------------
+// --------------- Reviews API Routes (Supports ID and Slug) ---------------
 app.get("/api/products/:id/reviews", async (req, res) => {
-  const productId = req.params.id;
+  const { id } = req.params;
+
   try {
+    const product = await getProductByIdOrSlug(id);
+
+    if (!product) {
+      return res.status(404).json({ error: "Product not found." });
+    }
+
     const result = await pool.query(
       `SELECT id, user_name, rating, comment, created_at 
        FROM reviews 
-       WHERE product_id = CAST($1 AS INTEGER)
+       WHERE product_id = $1
        ORDER BY created_at DESC`,
-      [productId],
+      [product.id],
     );
     res.json(result.rows);
   } catch (err) {
@@ -576,7 +583,7 @@ app.get("/api/products/:id/reviews", async (req, res) => {
 });
 
 app.post("/api/products/:id/guest-reviews", async (req, res) => {
-  const productId = req.params.id;
+  const { id } = req.params;
   const { orderId, email, customer_email, rating, comment, displayName } =
     req.body;
 
@@ -597,6 +604,14 @@ app.post("/api/products/:id/guest-reviews", async (req, res) => {
 
   let client;
   try {
+    const product = await getProductByIdOrSlug(id);
+
+    if (!product) {
+      return res.status(404).json({ error: "Product not found." });
+    }
+
+    const productId = product.id;
+
     client = await pool.connect();
     await client.query("BEGIN");
 
@@ -606,7 +621,7 @@ app.post("/api/products/:id/guest-reviews", async (req, res) => {
        LEFT JOIN order_items oi ON oi.order_id = o.id
        WHERE (CAST(o.id AS TEXT) = $1 OR o.stripe_payment_intent_id = $1) 
          AND LOWER(TRIM(o.customer_email)) = $2
-         AND (oi.product_id = CAST($3 AS INTEGER) OR o.product_id = CAST($3 AS INTEGER))
+         AND (oi.product_id = $3 OR o.product_id = $3)
          AND o.status IN ('completed', 'paid', 'delivered', 'succeeded')
        LIMIT 1`,
       [cleanOrderId, userEmail, productId],
@@ -623,7 +638,7 @@ app.post("/api/products/:id/guest-reviews", async (req, res) => {
     const verifiedOrderId = matchCheck.rows[0].id;
 
     const duplicateCheck = await client.query(
-      `SELECT id FROM reviews WHERE order_id = $1 AND product_id = CAST($2 AS INTEGER)`,
+      `SELECT id FROM reviews WHERE order_id = $1 AND product_id = $2`,
       [verifiedOrderId, productId],
     );
 
@@ -637,7 +652,7 @@ app.post("/api/products/:id/guest-reviews", async (req, res) => {
     const reviewerName = displayName?.trim() || "Verified Buyer";
     const newReview = await client.query(
       `INSERT INTO reviews (product_id, order_id, guest_email, user_name, rating, comment, created_at)
-       VALUES (CAST($1 AS INTEGER), $2, $3, $4, $5, $6, NOW())
+       VALUES ($1, $2, $3, $4, $5, $6, NOW())
        RETURNING id, product_id, user_name, rating, comment, created_at`,
       [
         productId,
@@ -650,7 +665,7 @@ app.post("/api/products/:id/guest-reviews", async (req, res) => {
     );
 
     const statsResult = await client.query(
-      `SELECT COUNT(*) AS count, AVG(rating) AS average FROM reviews WHERE product_id = CAST($1 AS INTEGER)`,
+      `SELECT COUNT(*) AS count, AVG(rating) AS average FROM reviews WHERE product_id = $1`,
       [productId],
     );
 
@@ -660,7 +675,7 @@ app.post("/api/products/:id/guest-reviews", async (req, res) => {
     );
 
     await client.query(
-      `UPDATE products SET rating_average = $1, rating_count = $2 WHERE id = CAST($3 AS INTEGER)`,
+      `UPDATE products SET rating_average = $1, rating_count = $2 WHERE id = $3`,
       [newAverage, newCount, productId],
     );
 

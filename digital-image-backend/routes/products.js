@@ -18,6 +18,21 @@ const createSlug = (title) => {
     .replace(/^-+|-+$/g, "");
 };
 
+// Helper function to resolve integer Product ID from numeric ID string or slug
+const resolveProductId = async (identifier) => {
+  if (!identifier) return null;
+  const isNumeric = /^\d+$/.test(identifier);
+  if (isNumeric) {
+    return parseInt(identifier, 10);
+  }
+  const result = await pool.query(
+    "SELECT id FROM products WHERE slug = $1 LIMIT 1",
+    [identifier],
+  );
+  if (result.rows.length === 0) return null;
+  return result.rows[0].id;
+};
+
 // ----------------------------------------------------------------------
 // 1. CONFIGURE MULTER-S3 FOR FILE UPLOADS
 // ----------------------------------------------------------------------
@@ -82,7 +97,35 @@ router.get("/", async (req, res) => {
 });
 
 // ----------------------------------------------------------------------
-// 3. GET /api/products/:identifier (Fetch Single Product by ID or Slug)
+// 3. GET /api/products/:identifier/reviews (Fetch Reviews by ID or Slug)
+// ----------------------------------------------------------------------
+router.get("/:identifier/reviews", async (req, res) => {
+  const { identifier } = req.params;
+
+  try {
+    const productId = await resolveProductId(identifier);
+
+    if (!productId) {
+      return res.status(404).json({ error: "Product not found." });
+    }
+
+    const result = await pool.query(
+      `SELECT id, user_name, rating, comment, created_at 
+       FROM reviews 
+       WHERE product_id = $1
+       ORDER BY created_at DESC`,
+      [productId],
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error("❌ Error fetching reviews:", err.message);
+    res.status(500).json({ error: "Failed to load reviews." });
+  }
+});
+
+// ----------------------------------------------------------------------
+// 4. GET /api/products/:identifier (Fetch Single Product by ID or Slug)
 // ----------------------------------------------------------------------
 router.get("/:identifier", async (req, res) => {
   const { identifier } = req.params;
@@ -109,7 +152,7 @@ router.get("/:identifier", async (req, res) => {
 });
 
 // ----------------------------------------------------------------------
-// 4. POST /api/products/upload (Protected Route - Auto-Generates Slug)
+// 5. POST /api/products/upload (Protected Route - Auto-Generates Slug)
 // ----------------------------------------------------------------------
 router.post("/upload", verifyToken, uploadFields, async (req, res) => {
   try {
@@ -178,7 +221,7 @@ router.post("/upload", verifyToken, uploadFields, async (req, res) => {
 });
 
 // ----------------------------------------------------------------------
-// 5. DELETE /api/products/:id (Protected Route)
+// 6. DELETE /api/products/:id (Protected Route)
 // ----------------------------------------------------------------------
 router.delete("/:id", verifyToken, async (req, res) => {
   try {
@@ -251,10 +294,16 @@ router.delete("/:id", verifyToken, async (req, res) => {
 });
 
 // ----------------------------------------------------------------------
-// 6. POST /api/products/:id/guest-reviews
+// 7. POST /api/products/:id/guest-reviews (Supports ID and Slug)
 // ----------------------------------------------------------------------
 router.post("/:id/guest-reviews", async (req, res) => {
-  const productId = Number(req.params.id);
+  const { id } = req.params;
+  const productId = await resolveProductId(id);
+
+  if (!productId) {
+    return res.status(404).json({ error: "Product not found." });
+  }
+
   const { rating, orderId, email, customer_email, displayName, comment } =
     req.body;
 
@@ -273,10 +322,6 @@ router.post("/:id/guest-reviews", async (req, res) => {
     return res
       .status(400)
       .json({ error: "Rating must be a number between 1 and 5." });
-  }
-
-  if (isNaN(productId)) {
-    return res.status(400).json({ error: "Invalid product ID." });
   }
 
   try {
