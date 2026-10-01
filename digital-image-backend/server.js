@@ -218,8 +218,12 @@ app.get("/product/:identifier", async (req, res) => {
   const userAgent = req.headers["user-agent"] || "";
   const { identifier } = req.params;
 
+  // Bot check including Google Inspection Tool & standard crawlers
+  const isCrawler =
+    isbot(userAgent) || /google-inspectiontool/i.test(userAgent);
+
   // Real human visitors: redirect to frontend React application
-  if (!isbot(userAgent)) {
+  if (!isCrawler) {
     return res.redirect(`https://pegty.com/product/${identifier}`);
   }
 
@@ -262,6 +266,7 @@ app.get("/product/:identifier", async (req, res) => {
     const metaTags = `
       <title>${title}</title>
       <meta name="description" content="${description}" />
+      <meta name="robots" content="index, follow, max-image-preview:large" />
       <link rel="canonical" href="${canonicalUrl}" />
 
       <!-- OpenGraph / Facebook / WhatsApp / LinkedIn -->
@@ -286,6 +291,8 @@ app.get("/product/:identifier", async (req, res) => {
     // If local build template exists, inject tags into </head>
     if (fs.existsSync(INDEX_HTML_PATH)) {
       let html = fs.readFileSync(INDEX_HTML_PATH, "utf8");
+      // Strip any conflicting robots meta tag from template build
+      html = html.replace(/<meta[^>]*name=["']robots["'][^>]*>/gi, "");
       html = html.replace("</head>", `${metaTags}</head>`);
       res.setHeader("Content-Type", "text/html");
       return res.send(html);
