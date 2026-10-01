@@ -1,14 +1,18 @@
-
 DirectoryIndex index.html
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
 
- 
+  # 1. Sitemap & Robots Redirects
   RewriteRule ^sitemap\.xml$ https://api.pegty.com/sitemap.xml [R=301,L]
   RewriteRule ^robots\.txt$ https://api.pegty.com/robots.txt [R=301,L]
 
+  # 2. Route Crawlers & Social Bots accessing /product/ to Express API
+  RewriteCond %{HTTP_USER_AGENT} (facebookexternalhit|LinkedInBot|Twitterbot|WhatsApp|TelegramBot|Discordbot|Googlebot|bingbot|Slackbot|Pinterest|crawler|spider|bot) [NC]
+  RewriteRule ^product/(.*)$ https://api.pegty.com/product/$1 [P,L]
+
+  # 3. Standard React SPA Fallback for Human Visitors
   RewriteRule ^index\.html$ - [L]
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d

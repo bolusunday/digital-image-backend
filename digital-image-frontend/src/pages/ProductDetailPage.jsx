@@ -7,6 +7,7 @@ import React, {
   useCallback,
 } from "react";
 import { useParams, Link } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import {
   ShoppingBag,
   ArrowLeft,
@@ -387,6 +388,21 @@ export default function ProductDetailPage({ onAddToCart }) {
   const productTitle = product?.title || "Digital Download";
   const mainSeoAltText = `${productTitle} - ${formattedCategory} Printable Art`;
 
+  // ----------------------------------------------------------------------
+  // DYNAMIC SEO META TAGS FOR REACT-HELMET-ASYNC
+  // ----------------------------------------------------------------------
+  const canonicalUrl = `https://pegty.com/product/${product?.slug || productKey}`;
+  const metaTitle = product
+    ? `${product.title} | Pegty Studio`
+    : "Pegty Studio";
+  const metaDescription = product?.description
+    ? product.description.replace(/<[^>]*>?/gm, "").slice(0, 155)
+    : "Discover unique digital art, prints, and downloads at Pegty Studio.";
+  const metaImage =
+    product?.public_thumb_url ||
+    product?.imageUrl ||
+    "https://pegty.com/logo.png";
+
   const validReviews = useMemo(
     () =>
       (Array.isArray(reviews) ? reviews : []).filter(
@@ -402,10 +418,10 @@ export default function ProductDetailPage({ onAddToCart }) {
     if (!product) return null;
 
     const siteBaseUrl = process.env.REACT_APP_SITE_URL || "https://pegty.com";
-    const canonicalUrl =
+    const schemaCanonical =
       typeof window !== "undefined" && window.location.origin
-        ? `${window.location.origin}/products/${id}`
-        : `${siteBaseUrl}/products/${id}`;
+        ? `${window.location.origin}/product/${product.slug || productKey}`
+        : `${siteBaseUrl}/product/${product.slug || productKey}`;
 
     const nextYear = new Date().getFullYear() + 1;
 
@@ -421,8 +437,8 @@ export default function ProductDetailPage({ onAddToCart }) {
       image: galleryImages,
       description: product.description || `${productTitle} digital download.`,
       category: formattedCategory || "Digital Goods",
-      sku: String(product.sku || product.id || id),
-      mpn: String(product.id || id),
+      sku: String(product.sku || product.id || productKey),
+      mpn: String(product.id || productKey),
       fileFormat:
         product.fileFormat || (isEbook ? "application/pdf" : "application/zip"),
       brand: {
@@ -436,7 +452,7 @@ export default function ProductDetailPage({ onAddToCart }) {
         priceValidUntil: `${nextYear}-12-31`,
         availability: "https://schema.org/InStock",
         itemCondition: "https://schema.org/NewCondition",
-        url: canonicalUrl,
+        url: schemaCanonical,
         seller: {
           "@type": "Organization",
           name: "Pegty Studio",
@@ -511,7 +527,7 @@ export default function ProductDetailPage({ onAddToCart }) {
     return schema;
   }, [
     product,
-    id,
+    productKey,
     productTitle,
     galleryImages,
     formattedCategory,
@@ -533,6 +549,10 @@ export default function ProductDetailPage({ onAddToCart }) {
   if (!product) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 text-center px-4">
+        <Helmet>
+          <title>Product Not Found | Pegty Studio</title>
+          <meta name="robots" content="noindex" />
+        </Helmet>
         <h2 className="text-lg sm:text-xl font-bold text-slate-900">
           Product not found
         </h2>
@@ -572,6 +592,28 @@ export default function ProductDetailPage({ onAddToCart }) {
 
   return (
     <div className="min-h-screen bg-slate-50/60 py-4 sm:py-8 px-3 sm:px-6 lg:px-8 pb-24 md:pb-8">
+      {/* Dynamic OpenGraph & Meta Tags */}
+      <Helmet>
+        {/* Primary Meta Tags */}
+        <title>{metaTitle}</title>
+        <meta name="description" content={metaDescription} />
+        <link rel="canonical" href={canonicalUrl} />
+
+        {/* Open Graph / Facebook / WhatsApp */}
+        <meta property="og:type" content="product" />
+        <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:title" content={metaTitle} />
+        <meta property="og:description" content={metaDescription} />
+        <meta property="og:image" content={metaImage} />
+
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:url" content={canonicalUrl} />
+        <meta name="twitter:title" content={metaTitle} />
+        <meta name="twitter:description" content={metaDescription} />
+        <meta name="twitter:image" content={metaImage} />
+      </Helmet>
+
       {/* Dynamic Digital Product JSON-LD Injection */}
       {jsonLd && (
         <script
@@ -737,7 +779,7 @@ export default function ProductDetailPage({ onAddToCart }) {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-10">
             <div className="lg:col-span-5 h-fit">
               <WriteGuestReviewSection
-                productId={id}
+                productId={product.id || productKey}
                 onReviewAdded={(newReview, newStats) => {
                   if (newReview) {
                     setReviews((prev) => [newReview, ...prev]);
