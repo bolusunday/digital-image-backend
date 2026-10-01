@@ -8,9 +8,9 @@ DirectoryIndex index.html
   RewriteRule ^sitemap\.xml$ https://api.pegty.com/sitemap.xml [R=301,L]
   RewriteRule ^robots\.txt$ https://api.pegty.com/robots.txt [R=301,L]
 
-  # 2. Route Crawlers & Social Bots internally to /bot-handler.php (ADDED LEADING SLASH)
+  # 2. Route Crawlers & Social Bots internally to /bot-handler.php
   RewriteCond %{HTTP_USER_AGENT} (facebookexternalhit|LinkedInBot|Twitterbot|WhatsApp|TelegramBot|Discordbot|Googlebot|bingbot|Slackbot|Pinterest|crawler|spider|bot) [NC]
-  RewriteRule ^product/(.*)$ /bot-handler.php?product=$1 [QSA,L]
+  RewriteRule ^product/(.*)$ /bot-handler.php?product=$1 [QSA,END]
 
   # 3. Standard React SPA Fallback for Human Visitors
   RewriteRule ^index\.html$ - [L]
