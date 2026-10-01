@@ -1,4 +1,7 @@
 const path = require("path");
+const fs = require("fs");
+const { isbot } = require("isbot");
+
 require("dotenv").config({
   path: [
     path.resolve(process.cwd(), ".env"),
@@ -29,6 +32,30 @@ const { sendOrderConfirmationEmail } = require("./utils/emailService");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Path to frontend index.html build template (if available locally)
+const INDEX_HTML_PATH = path.resolve(
+  __dirname,
+  "../digital-image-frontend/dist/index.html",
+);
+
+// Helper function to fetch product by ID or Slug from PostgreSQL
+async function getProductByIdOrSlug(identifier) {
+  try {
+    const isNumeric = /^\d+$/.test(identifier);
+    const query = isNumeric
+      ? "SELECT * FROM products WHERE id = $1 OR slug = $2 LIMIT 1"
+      : "SELECT * FROM products WHERE slug = $1 LIMIT 1";
+    const params = isNumeric
+      ? [parseInt(identifier, 10), identifier]
+      : [identifier];
+    const { rows } = await pool.query(query, params);
+    return rows[0] || null;
+  } catch (err) {
+    console.error("❌ Error fetching product for bot meta tags:", err.message);
+    return null;
+  }
+}
 
 // Enable reverse proxy trust for Hostinger/Cloudflare SSL termination
 app.set("trust proxy", 1);
@@ -186,6 +213,84 @@ app.get("/api/health", (req, res) => {
     .json({ status: "OK", domain: "pegty.com", timestamp: new Date() });
 });
 
+// --------------- SEO: Crawler Meta Tag Injection Route ---------------
+app.get("/product/:identifier", async (req, res) => {
+  const userAgent = req.headers["user-agent"] || "";
+  const { identifier } = req.params;
+
+  // Real human visitors: redirect to frontend React application
+  if (!isbot(userAgent)) {
+    return res.redirect(`https://pegty.com/product/${identifier}`);
+  }
+
+  // Requests from social crawlers & search bots: serve dynamic HTML with meta tags
+  try {
+    const product = await getProductByIdOrSlug(identifier);
+
+    if (!product) {
+      return res.status(404).send("Product not found");
+    }
+
+    const title = `${product.title} | Pegty Studio`;
+    const description = (product.description || "")
+      .replace(/<[^>]*>?/gm, "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 155);
+    const image = product.public_thumb_url || "https://pegty.com/logo.png";
+    const canonicalUrl = `https://pegty.com/product/${product.slug || product.id}`;
+
+    // Meta tags string
+    const metaTags = `
+      <title>${title}</title>
+      <meta name="description" content="${description}" />
+      <link rel="canonical" href="${canonicalUrl}" />
+
+      <!-- OpenGraph / Facebook / WhatsApp / LinkedIn -->
+      <meta property="og:type" content="product" />
+      <meta property="og:title" content="${title}" />
+      <meta property="og:description" content="${description}" />
+      <meta property="og:image" content="${image}" />
+      <meta property="og:url" content="${canonicalUrl}" />
+
+      <!-- Twitter Card -->
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:title" content="${title}" />
+      <meta name="twitter:description" content="${description}" />
+      <meta name="twitter:image" content="${image}" />
+    `;
+
+    // If local build template exists, inject tags into </head>
+    if (fs.existsSync(INDEX_HTML_PATH)) {
+      let html = fs.readFileSync(INDEX_HTML_PATH, "utf8");
+      html = html.replace("</head>", `${metaTags}</head>`);
+      res.setHeader("Content-Type", "text/html");
+      return res.send(html);
+    }
+
+    // Standalone clean HTML response for bots
+    const botHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  ${metaTags}
+</head>
+<body>
+  <h1>${product.title}</h1>
+  <p>${description}</p>
+  <img src="${image}" alt="${product.title}" />
+  <a href="${canonicalUrl}">View on Pegty Studio</a>
+</body>
+</html>`;
+
+    res.setHeader("Content-Type", "text/html");
+    return res.send(botHtml);
+  } catch (err) {
+    console.error("❌ Crawler preview generation error:", err.message);
+    return res.redirect(`https://pegty.com/product/${identifier}`);
+  }
+});
+
 // --------------- SEO: Sitemap & Robots.txt Routes ---------------
 app.get("/robots.txt", (req, res) => {
   res.type("text/plain");
@@ -203,7 +308,7 @@ Sitemap: https://pegty.com/sitemap.xml`);
 app.get("/sitemap.xml", async (req, res) => {
   try {
     const { rows: products } = await pool.query(
-      "SELECT id, title, public_thumb_url, created_at FROM products ORDER BY id DESC",
+      "SELECT id, title, public_thumb_url, created_at, slug FROM products ORDER BY id DESC",
     );
 
     const baseUrl = "https://pegty.com";
@@ -523,7 +628,6 @@ app.post("/api/products/:id/guest-reviews", async (req, res) => {
 });
 
 // --------------- Non-blocking Database Initialization Function ---------------
-//Helps convert title to slug
 function generateSlug(title, id) {
   const cleanTitle = (title || "product")
     .toLowerCase()
