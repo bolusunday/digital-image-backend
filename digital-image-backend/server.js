@@ -213,7 +213,7 @@ app.get("/api/health", (req, res) => {
     .json({ status: "OK", domain: "pegty.com", timestamp: new Date() });
 });
 
-// --------------- SEO: Crawler Meta Tag Injection Route ---------------
+// --------------- SEO: Crawler Meta Tag & Schema.org Injection Route ---------------
 app.get("/product/:identifier", async (req, res) => {
   const userAgent = req.headers["user-agent"] || "";
   const { identifier } = req.params;
@@ -223,7 +223,7 @@ app.get("/product/:identifier", async (req, res) => {
     return res.redirect(`https://pegty.com/product/${identifier}`);
   }
 
-  // Requests from social crawlers & search bots: serve dynamic HTML with meta tags
+  // Requests from social crawlers & search bots: serve dynamic HTML with meta tags & Schema.org JSON-LD
   try {
     const product = await getProductByIdOrSlug(identifier);
 
@@ -239,8 +239,26 @@ app.get("/product/:identifier", async (req, res) => {
       .slice(0, 155);
     const image = product.public_thumb_url || "https://pegty.com/logo.png";
     const canonicalUrl = `https://pegty.com/product/${product.slug || product.id}`;
+    const formattedPrice = (Number(product.price || 0) / 100).toFixed(2);
 
-    // Meta tags string
+    // Schema.org Structured Data for Google Rich Snippets
+    const jsonLdData = {
+      "@context": "https://schema.org/",
+      "@type": "Product",
+      name: product.title,
+      image: [image],
+      description: description,
+      sku: `PEGTY-${product.id}`,
+      offers: {
+        "@type": "Offer",
+        url: canonicalUrl,
+        priceCurrency: "USD",
+        price: formattedPrice,
+        availability: "https://schema.org/InStock",
+      },
+    };
+
+    // Meta tags & Schema.org string
     const metaTags = `
       <title>${title}</title>
       <meta name="description" content="${description}" />
@@ -258,6 +276,11 @@ app.get("/product/:identifier", async (req, res) => {
       <meta name="twitter:title" content="${title}" />
       <meta name="twitter:description" content="${description}" />
       <meta name="twitter:image" content="${image}" />
+
+      <!-- Schema.org JSON-LD -->
+      <script type="application/ld+json">
+        ${JSON.stringify(jsonLdData, null, 2)}
+      </script>
     `;
 
     // If local build template exists, inject tags into </head>
