@@ -7,14 +7,20 @@ if (empty($product)) {
     exit;
 }
 
-// Fetch the pre-rendered metadata HTML from your Express API
+// Ensure a crawler User-Agent is always sent to the API
+$incomingUserAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
+$userAgent = !empty($incomingUserAgent) ? $incomingUserAgent : 'LinkedInBot/1.0';
+
+// Fetch the pre-rendered metadata HTML from Express API
 $apiUrl = "https://api.pegty.com/product/" . urlencode($product);
 
 $ch = curl_init();
 curl_setopt($ch, CURLOPT_URL, $apiUrl);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_USERAGENT, $_SERVER['HTTP_USER_AGENT'] ?? 'LinkedInBot');
-curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+curl_setopt($ch, CURLOPT_USERAGENT, $userAgent);
+curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+curl_setopt($ch, CURLOPT_TIMEOUT, 10);
 
 $response = curl_exec($ch);
 $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -24,6 +30,6 @@ if ($httpCode === 200 && !empty($response)) {
     header('Content-Type: text/html; charset=utf-8');
     echo $response;
 } else {
-    // Fallback if API fails
+    // Fallback to React index.html if API fetch fails
     readfile('index.html');
 }
