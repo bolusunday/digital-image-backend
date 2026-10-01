@@ -118,7 +118,10 @@ export default function ProductCard({ product, onAddToCart }) {
     <div className="group relative w-full bg-white rounded-2xl border border-slate-200/90 shadow-xs hover:shadow-xl hover:border-slate-300 transition-all duration-300 flex flex-col justify-between h-full overflow-hidden p-3">
       {/* 1. MEDIA CONTAINER */}
       <div className="relative w-full aspect-[4/5] bg-slate-100/80 rounded-xl overflow-hidden shrink-0">
-        <Link to={`/product/${product.id}`} className="block w-full h-full">
+        <Link
+          to={`/product/${product.slug || product.id}`}
+          className="block w-full h-full"
+        >
           <img
             src={imageUrl}
             alt={seoAltText}
@@ -138,7 +141,10 @@ export default function ProductCard({ product, onAddToCart }) {
           </div>
 
           {/* Title */}
-          <Link to={`/product/${product.id}`} className="no-underline block">
+          <Link
+            to={`/product/${product.slug || product.id}`}
+            className="no-underline block"
+          >
             <h3
               title={product.title}
               className="text-sm font-bold text-slate-900 line-clamp-2 leading-snug group-hover:text-indigo-600 transition-colors"

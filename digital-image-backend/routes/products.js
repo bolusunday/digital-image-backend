@@ -8,6 +8,16 @@ const s3Client = require("../config/s3");
 const verifyToken = require("../middleware/authMiddleware");
 const { DeleteObjectCommand } = require("@aws-sdk/client-s3");
 
+// Helper function to turn a product title into a URL slug
+const createSlug = (title) => {
+  return (title || "product")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/[\s_-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+};
+
 // ----------------------------------------------------------------------
 // 1. CONFIGURE MULTER-S3 FOR FILE UPLOADS
 // ----------------------------------------------------------------------
@@ -40,7 +50,7 @@ const uploadFields = (req, res, next) => {
   const multerHandler = upload.fields([
     { name: "thumbnail", maxCount: 1 },
     { name: "original_file", maxCount: 1 },
-    { name: "gallery", maxCount: 10 }, // Allowed multi-image gallery files
+    { name: "gallery", maxCount: 10 },
   ]);
 
   multerHandler(req, res, (err) => {
@@ -56,12 +66,12 @@ const uploadFields = (req, res, next) => {
 };
 
 // ----------------------------------------------------------------------
-// 2. GET /api/products (Fetch All Products)
+// 2. GET /api/products (Fetch All Products - Includes Slugs)
 // ----------------------------------------------------------------------
 router.get("/", async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT id, title, description, price, category, public_thumb_url, images, rating_average, rating_count, sales_count, created_at FROM products ORDER BY id DESC",
+      "SELECT id, title, slug, description, price, category, public_thumb_url, images, rating_average, rating_count, sales_count, created_at FROM products ORDER BY id DESC",
     );
     res.json(result.rows);
   } catch (err) {
@@ -71,17 +81,19 @@ router.get("/", async (req, res) => {
 });
 
 // ----------------------------------------------------------------------
-// 3. GET /api/products/:id (Fetch Single Product by ID)
+// 3. GET /api/products/:identifier (Fetch Single Product by ID or Slug)
 // ----------------------------------------------------------------------
-router.get("/:id", async (req, res) => {
-  const productId = parseInt(req.params.id, 10);
-  if (isNaN(productId)) {
-    return res.status(400).json({ error: "Invalid product ID format." });
-  }
+router.get("/:identifier", async (req, res) => {
+  const { identifier } = req.params;
+  const isNumeric = /^\d+$/.test(identifier);
 
   try {
-    const result = await pool.query("SELECT * FROM products WHERE id = $1", [
-      productId,
+    const query = isNumeric
+      ? "SELECT * FROM products WHERE id = $1 LIMIT 1"
+      : "SELECT * FROM products WHERE slug = $1 LIMIT 1";
+
+    const result = await pool.query(query, [
+      isNumeric ? parseInt(identifier, 10) : identifier,
     ]);
 
     if (result.rows.length === 0) {
@@ -96,7 +108,7 @@ router.get("/:id", async (req, res) => {
 });
 
 // ----------------------------------------------------------------------
-// 4. POST /api/products/upload (Protected Route)
+// 4. POST /api/products/upload (Protected Route - Auto-Generates Slug)
 // ----------------------------------------------------------------------
 router.post("/upload", verifyToken, uploadFields, async (req, res) => {
   try {
@@ -119,7 +131,6 @@ router.post("/upload", verifyToken, uploadFields, async (req, res) => {
     const publicThumbUrl = thumbnailFile.location;
     const privateFileKey = originalFile.key;
 
-    // Collect extra gallery S3 URLs and put main thumbnail first
     const galleryUrls = galleryFiles.map((file) => file.location);
     const imagesList = [publicThumbUrl, ...galleryUrls];
 
@@ -129,6 +140,7 @@ router.post("/upload", verifyToken, uploadFields, async (req, res) => {
       return res.status(400).json({ error: "Invalid price provided." });
     }
 
+    // 1. Insert product first to get product ID
     const insertQuery = `
       INSERT INTO products (title, description, price, public_thumb_url, private_file_key, category, images)
       VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -144,11 +156,19 @@ router.post("/upload", verifyToken, uploadFields, async (req, res) => {
       imagesList,
     ];
 
-    const newProduct = await pool.query(insertQuery, values);
+    const newProductResult = await pool.query(insertQuery, values);
+    const insertedProduct = newProductResult.rows[0];
+
+    // 2. Generate slug with keyword + ID and update product
+    const generatedSlug = `${createSlug(title)}-${insertedProduct.id}`;
+    const updateSlugResult = await pool.query(
+      `UPDATE products SET slug = $1 WHERE id = $2 RETURNING *`,
+      [generatedSlug, insertedProduct.id],
+    );
 
     res.status(201).json({
       message: "Product created successfully!",
-      product: newProduct.rows[0],
+      product: updateSlugResult.rows[0],
     });
   } catch (err) {
     console.error("❌ DATABASE INSERT ERROR:", err.message);
@@ -178,7 +198,6 @@ router.delete("/:id", verifyToken, async (req, res) => {
     const bucketName = process.env.AWS_BUCKET_NAME;
     const deletePromises = [];
 
-    // Helper to extract S3 key from full public URL
     const extractS3Key = (url) => {
       if (url && url.includes(".amazonaws.com/")) {
         return url.split(".amazonaws.com/")[1];
@@ -197,7 +216,6 @@ router.delete("/:id", verifyToken, async (req, res) => {
       );
     }
 
-    // Delete thumbnail
     const thumbKey = extractS3Key(public_thumb_url);
     if (thumbKey) {
       deletePromises.push(
@@ -207,7 +225,6 @@ router.delete("/:id", verifyToken, async (req, res) => {
       );
     }
 
-    // Delete gallery images if stored in S3
     if (Array.isArray(images)) {
       images.forEach((imgUrl) => {
         const key = extractS3Key(imgUrl);

@@ -261,7 +261,7 @@ function formatDate(dateString) {
 // 3. MAIN PRODUCT PAGE
 // ----------------------------------------------------------------------
 export default function ProductDetailPage({ onAddToCart }) {
-  const { id } = useParams();
+  const { identifier } = useParams();
   const [product, setProduct] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -278,7 +278,7 @@ export default function ProductDetailPage({ onAddToCart }) {
     let isMounted = true;
     setLoading(true);
 
-    const fetchProduct = fetch(`${API_URL}/api/products/${id}`)
+    const fetchProduct = fetch(`${API_URL}/api/products/${identifier}`)
       .then((r) => (r.ok ? r.json() : null))
       .catch(() => null);
 

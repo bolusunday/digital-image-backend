@@ -37,6 +37,14 @@ function Home({ products, isLoading, onAddToCart }) {
   const currentCategory = categorySlug || searchParams.get("category") || "";
   const searchQuery = searchParams.get("search")?.trim().toLowerCase() || "";
 
+  // Helper to normalize category strings for accurate slug matching
+  // Converts "Dark Cottage Core" -> "darkcottagecore" and "Rustik & Gothic" -> "rustikandgothic"
+  const normalizeCategory = (str) =>
+    (str || "")
+      .toLowerCase()
+      .replace(/&/g, "and")
+      .replace(/[^a-z0-9]/g, "");
+
   // Map slugs to proper category display names
   const categoryNames = {
     cottagecore: "Cottage Core",
@@ -49,13 +57,14 @@ function Home({ products, isLoading, onAddToCart }) {
     ebook: "E-Books",
   };
 
-  // Filter products: If a specific category is selected, filter by it.
+  // Filter products: If a specific category is selected, match via normalized slugs.
   // If viewing all products on the home page, exclude "ebook" category products.
   let displayedProducts = currentCategory
     ? products.filter(
-        (p) => p.category?.toLowerCase() === currentCategory.toLowerCase(),
+        (p) =>
+          normalizeCategory(p.category) === normalizeCategory(currentCategory),
       )
-    : products.filter((p) => p.category?.toLowerCase() !== "ebook");
+    : products.filter((p) => normalizeCategory(p.category) !== "ebook");
 
   if (searchQuery) {
     displayedProducts = displayedProducts.filter((p) => {
@@ -71,7 +80,7 @@ function Home({ products, isLoading, onAddToCart }) {
       return `Search Results for "${searchQuery}"`;
     }
     if (currentCategory) {
-      const lowerCategory = currentCategory.toLowerCase();
+      const lowerCategory = normalizeCategory(currentCategory);
       const categoryName =
         categoryNames[lowerCategory] ||
         currentCategory.charAt(0).toUpperCase() + currentCategory.slice(1);
@@ -290,7 +299,7 @@ export default function App() {
 
             {/* Supported both singular and plural URL structures for canonical flexibility */}
             <Route
-              path="/product/:id"
+              path="/product/:identifier"
               element={<ProductDetailPage onAddToCart={handleAddToCart} />}
             />
             <Route

@@ -254,31 +254,32 @@ app.get("/sitemap.xml", async (req, res) => {
     const productPages = products
       .map((product) => {
         const lastModDate = getValidDate(product.created_at);
+        const slugOrId = product.slug || product.id;
         const imageTag = product.public_thumb_url
           ? `
     <image:image>
       <image:loc>${product.public_thumb_url}</image:loc>
-      <image:title>${product.title ? product.title.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : "Digital Product"}</image:title>
+      <image:title>${product.title ? product.title.replace(/&/g, "&amp;") : "Product"}</image:title>
     </image:image>`
           : "";
 
         return `
-  <url>
-    <loc>${baseUrl}/product/${product.id}</loc>
-    <lastmod>${lastModDate}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>${imageTag}
-  </url>`;
+    <url>
+      <loc>${baseUrl}/product/${slugOrId}</loc>
+      <lastmod>${lastModDate}</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>0.7</priority>${imageTag}
+    </url>`;
       })
       .join("");
 
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
-${staticPages}
-${categoryPages}
-${productPages}
-</urlset>`;
+    ${staticPages}
+    ${categoryPages}
+    ${productPages}
+    </urlset>`;
 
     res.header("Content-Type", "application/xml");
     res.status(200).send(xml.trim());
@@ -342,6 +343,7 @@ app.put("/api/admin/products/:id", async (req, res) => {
   const productId = parseInt(req.params.id, 10);
   const { title, description, price, category, public_thumb_url, images } =
     req.body;
+  const slug = generateSlug(title, productId);
 
   if (isNaN(productId)) {
     return res.status(400).json({ error: "Invalid product ID format." });
@@ -367,8 +369,9 @@ app.put("/api/admin/products/:id", async (req, res) => {
            price = $3, 
            category = $4,
            public_thumb_url = $5,
-           images = $6
-       WHERE id = $7 
+           images = $6,
+           slug = $7
+       WHERE id = $8 
        RETURNING *`,
       [
         title,
@@ -377,6 +380,7 @@ app.put("/api/admin/products/:id", async (req, res) => {
         safeCategory,
         safeThumbUrl,
         safeImages,
+        slug,
         productId,
       ],
     );
@@ -519,6 +523,17 @@ app.post("/api/products/:id/guest-reviews", async (req, res) => {
 });
 
 // --------------- Non-blocking Database Initialization Function ---------------
+//Helps convert title to slug
+function generateSlug(title, id) {
+  const cleanTitle = (title || "product")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/[\s_-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return id ? `${cleanTitle}-${id}` : cleanTitle;
+}
+
 async function initDbSchema() {
   try {
     await pool.query(`
@@ -593,6 +608,22 @@ async function initDbSchema() {
       ALTER TABLE reviews ADD COLUMN IF NOT EXISTS guest_email VARCHAR(255);
       ALTER TABLE reviews ADD COLUMN IF NOT EXISTS user_name VARCHAR(255) DEFAULT 'Verified Buyer';
     `);
+
+    await pool.query(`
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS slug VARCHAR(255);
+    `);
+
+    // Backfill any products missing slugs
+    const unslugged = await pool.query(
+      "SELECT id, title FROM products WHERE slug IS NULL OR slug = ''",
+    );
+    for (const prod of unslugged.rows) {
+      const slug = generateSlug(prod.title, prod.id);
+      await pool.query("UPDATE products SET slug = $1 WHERE id = $2", [
+        slug,
+        prod.id,
+      ]);
+    }
 
     const adminEmail = process.env.ADMIN_EMAIL || "adebolusunday86@gmail.com";
     const adminPassword = process.env.ADMIN_PASSWORD;
