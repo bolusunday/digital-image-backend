@@ -261,7 +261,9 @@ function formatDate(dateString) {
 // 3. MAIN PRODUCT PAGE
 // ----------------------------------------------------------------------
 export default function ProductDetailPage({ onAddToCart }) {
-  const { identifier } = useParams();
+  const { identifier, id } = useParams();
+  const productKey = identifier || id;
+
   const [product, setProduct] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -278,11 +280,11 @@ export default function ProductDetailPage({ onAddToCart }) {
     let isMounted = true;
     setLoading(true);
 
-    const fetchProduct = fetch(`${API_URL}/api/products/${identifier}`)
+    const fetchProduct = fetch(`${API_URL}/api/products/${productKey}`)
       .then((r) => (r.ok ? r.json() : null))
       .catch(() => null);
 
-    const fetchReviews = fetch(`${API_URL}/api/products/${id}/reviews`)
+    const fetchReviews = fetch(`${API_URL}/api/products/${productKey}/reviews`)
       .then((r) => (r.ok ? r.json() : []))
       .catch(() => []);
 
@@ -299,7 +301,7 @@ export default function ProductDetailPage({ onAddToCart }) {
     return () => {
       isMounted = false;
     };
-  }, [id]);
+  }, [productKey]);
 
   const galleryImages = useMemo(() => {
     if (!product) return [];
@@ -320,7 +322,7 @@ export default function ProductDetailPage({ onAddToCart }) {
 
   useEffect(() => {
     setSelectedIndex(0);
-  }, [id]);
+  }, [productKey]);
 
   useEffect(() => {
     if (thumbnailRefs.current[selectedIndex]) {
